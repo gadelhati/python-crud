@@ -23,3 +23,6 @@ htmlcov/
 
 # Linter
 .ruff_cache/
+
+# Database
+db.*
