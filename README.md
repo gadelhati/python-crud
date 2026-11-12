@@ -23,13 +23,18 @@ Reusable Python application template built with FastAPI.
 
 - `GET /` returns `{"message": "Hello, World!"}`.
 - `GET /health` returns `{"status": "healthy"}`.
-- `POST /api/user` creates a user with `username`, `email`, and `password`, and returns a UUID identifier.
-- `GET /api/user` lists active users.
-- `GET /api/user/{user_id}` retrieves an active user.
-- `PUT /api/user/{user_id}` updates an active user.
-- `DELETE /api/user/{user_id}` performs a soft delete and records `deleted_at`.
-- `PATCH /api/user/{user_id}/restore` restores a soft-deleted user.
-- `DELETE /api/user/{user_id}/hard` permanently deletes a user.
+- `POST /api/user` publicly registers a user with `username`, `email`, and `password`.
+- `POST /api/login` publicly authenticates credentials and returns a JWT Bearer token.
+- `GET /api/user` lists active users and requires a JWT Bearer token.
+- `GET /api/user/{user_id}` retrieves an active user and requires a JWT Bearer token.
+- `PUT /api/user/{user_id}` updates an active user and requires a JWT Bearer token.
+- `DELETE /api/user/{user_id}` performs a soft delete and requires a JWT Bearer token.
+- `PATCH /api/user/{user_id}/restore` restores a soft-deleted user and requires a JWT Bearer token.
+- `DELETE /api/user/{user_id}/hard` permanently deletes a user and requires a JWT Bearer token.
+
+Set `UVICORN_JWT_SECRET_KEY` to a secret of at least 32 characters before starting
+the application. Tokens expire after 30 minutes by default; configure a different
+value with `UVICORN_JWT_ACCESS_TOKEN_EXPIRE_MINUTES`.
 
 
 ## Configuration

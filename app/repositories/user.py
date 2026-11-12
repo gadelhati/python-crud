@@ -32,6 +32,14 @@ class UserRepository(BaseRepository[User]):
         )
         return self.db.scalar(stmt)
 
+    def find_by_username(self, username: str) -> User | None:
+        """Returns an active user by username, or None if absent."""
+        stmt = select(self.model).where(
+            self.model.username == username,
+            self.model.deleted_at.is_(None),
+        )
+        return self.db.scalar(stmt)
+
     def soft_delete_by_id(self, id: UUID) -> bool:
         """Marks an active user as deleted. Returns True if it existed."""
         user = self.find_by_id(id)

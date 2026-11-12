@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.dependencies import CurrentUser, DbSession, UserRepo
+from app.dependencies import AuthenticatedUser, CurrentUser, DbSession, UserRepo
 from app.models.user import User
 from app.schemas.user import UserRequest, UserResponse
 from app.services.password import hash_password
@@ -26,6 +26,7 @@ def create(request: UserRequest, repo: UserRepo, db: DbSession):
 
 @user.get("", response_model=list[UserResponse])
 def find_all(
+    _: AuthenticatedUser,
     repo: UserRepo,
     offset: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
@@ -34,12 +35,12 @@ def find_all(
 
 
 @user.get("/{user_id}", response_model=UserResponse)
-def find_by_id(user: CurrentUser):
+def find_by_id(_: AuthenticatedUser, user: CurrentUser):
     return user
 
 
 @user.put("/{user_id}", response_model=UserResponse)
-def update(request: UserRequest, user: CurrentUser, db: DbSession):
+def update(request: UserRequest, _: AuthenticatedUser, user: CurrentUser, db: DbSession):
     user.username = request.username
     user.email = request.email
     user.password_hash = hash_password(request.password)
@@ -48,21 +49,21 @@ def update(request: UserRequest, user: CurrentUser, db: DbSession):
 
 
 @user.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_by_id(user_id: UUID, repo: UserRepo, db: DbSession):
+def delete_by_id(user_id: UUID, _: AuthenticatedUser, repo: UserRepo, db: DbSession):
     if not repo.soft_delete_by_id(user_id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User não encontrado")
     db.commit()
 
 
 @user.delete("/{user_id}/hard", status_code=status.HTTP_204_NO_CONTENT)
-def hard_delete_by_id(user_id: UUID, repo: UserRepo, db: DbSession):
+def hard_delete_by_id(user_id: UUID, _: AuthenticatedUser, repo: UserRepo, db: DbSession):
     if not repo.delete_by_id(user_id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User não encontrado")
     db.commit()
 
 
 @user.patch("/{user_id}/restore", response_model=UserResponse)
-def restore_by_id(user_id: UUID, repo: UserRepo, db: DbSession):
+def restore_by_id(user_id: UUID, _: AuthenticatedUser, repo: UserRepo, db: DbSession):
     user = repo.restore_by_id(user_id)
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuário não encontrado ou não excluído")
