@@ -11,6 +11,7 @@ from app.models.join import user_roles
 if TYPE_CHECKING:
     from app.models.role import Role
 
+
 class User(TimestampMixin, EntityBase):
     """User entity representing a user in the system."""
 

@@ -1,7 +1,8 @@
 # app/models/permission.py
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Enum, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import TYPE_CHECKING
 
 from app.enum.permission_action import EnumPermissionAction
 from app.models.base import EntityBase, TimestampMixin

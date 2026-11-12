@@ -1,7 +1,8 @@
 # app/models/role.py
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import TYPE_CHECKING
 
 from app.models.base import EntityBase, TimestampMixin
 from app.models.join import role_permissions, user_roles
