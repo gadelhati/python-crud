@@ -1,4 +1,4 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 
@@ -47,9 +47,10 @@ def test_user_list_endpoint_initializes_database_schema() -> None:
 
 
 def test_user_endpoints_use_uuid_identifiers() -> None:
+    unique_suffix = uuid4().hex
     payload = {
-        "username": "python_user",
-        "email": "python.user@example.com",
+        "username": f"python_user_{unique_suffix}",
+        "email": f"python.user.{unique_suffix}@example.com",
         "password": "secure-password",
     }
 
@@ -62,17 +63,21 @@ def test_user_endpoints_use_uuid_identifiers() -> None:
 
         get_response = application_client.get(f"/api/user/{user_id}")
 
-    assert get_response.status_code == 200
-    assert get_response.json()["id"] == str(user_id)
-    assert get_response.json()["deleted_at"] is None
-    assert "password" not in get_response.json()
-    assert "password_hash" not in get_response.json()
+        assert get_response.status_code == 200
+        assert get_response.json()["id"] == str(user_id)
+        assert get_response.json()["deleted_at"] is None
+        assert "password" not in get_response.json()
+        assert "password_hash" not in get_response.json()
 
-    with SessionLocal() as db:
-        stored_user = db.get(User, user_id)
-        assert stored_user is not None
-        assert stored_user.password_hash != payload["password"]
-        assert stored_user.password_hash.startswith("pbkdf2_sha256$")
+        with SessionLocal() as db:
+            stored_user = db.get(User, user_id)
+            assert stored_user is not None
+            assert stored_user.password_hash != payload["password"]
+            assert stored_user.password_hash.startswith("pbkdf2_sha256$")
+
+        hard_delete_response = application_client.delete(f"/api/user/{user_id}/hard")
+
+    assert hard_delete_response.status_code == 204
 
 
 def test_user_soft_delete_restore_and_hard_delete() -> None:
