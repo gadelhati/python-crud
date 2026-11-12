@@ -47,7 +47,7 @@ class BaseRepository[T: Base]:
         return entity
 
     def delete_by_id(self, id: UUID) -> bool:
-        """Deletes by ID. Returns True if any record was deleted."""
+        """Permanently deletes a record by ID. Returns True if it existed."""
         entity = self.db.get(self.model, id)
         if entity is None:
             return False

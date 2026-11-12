@@ -63,3 +63,30 @@ def test_user_endpoints_use_uuid_identifiers() -> None:
 
     assert get_response.status_code == 200
     assert get_response.json()["id"] == str(user_id)
+    assert get_response.json()["deleted_at"] is None
+
+
+def test_user_soft_delete_restore_and_hard_delete() -> None:
+    payload = {
+        "titulo": "Python avançado",
+        "descricao": "Curso avançado",
+        "carga_horaria": 40,
+        "qtd_exercicios": 20,
+    }
+
+    with TestClient(app) as application_client:
+        create_response = application_client.post("/api/user", json=payload)
+        user_id = create_response.json()["id"]
+
+        soft_delete_response = application_client.delete(f"/api/user/{user_id}")
+        get_deleted_response = application_client.get(f"/api/user/{user_id}")
+        restore_response = application_client.patch(f"/api/user/{user_id}/restore")
+        hard_delete_response = application_client.delete(f"/api/user/{user_id}/hard")
+        get_hard_deleted_response = application_client.get(f"/api/user/{user_id}")
+
+    assert soft_delete_response.status_code == 204
+    assert get_deleted_response.status_code == 404
+    assert restore_response.status_code == 200
+    assert restore_response.json()["deleted_at"] is None
+    assert hard_delete_response.status_code == 204
+    assert get_hard_deleted_response.status_code == 404

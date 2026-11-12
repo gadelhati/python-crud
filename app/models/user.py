@@ -1,4 +1,6 @@
 # app/models/user.py
+from datetime import datetime
+
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -15,6 +17,7 @@ class User(IdMixin, TimestampMixin, Base):
     descricao: Mapped[str] = mapped_column(String(255))
     carga_horaria: Mapped[int]
     qtd_exercicios: Mapped[int]
+    deleted_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, titulo={self.titulo!r})"

@@ -5,14 +5,14 @@ import uvicorn
 from fastapi import FastAPI
 
 from app.config import settings
-from app.database import Base, engine
+from app.database import initialize_database
 from app.routers.base import base
 from app.routers.user import user
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
+    initialize_database()
     yield
 
 

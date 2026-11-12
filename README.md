@@ -23,6 +23,16 @@ Reusable Python application template built with FastAPI.
 
 - `GET /` returns `{"message": "Hello, World!"}`.
 - `GET /health` returns `{"status": "healthy"}`.
+- `POST /api/user` creates a user with a UUID identifier.
+- `GET /api/user` lists active users.
+- `GET /api/user/{user_id}` retrieves an active user.
+- `PUT /api/user/{user_id}` updates an active user.
+- `DELETE /api/user/{user_id}` performs a soft delete and records `deleted_at`.
+- `PATCH /api/user/{user_id}/restore` restores a soft-deleted user.
+- `DELETE /api/user/{user_id}/hard` permanently deletes a user.
+
+The SQLite development database schema is initialized on application startup. Existing
+development databases receive the nullable `users.deleted_at` column automatically.
 
 ## Configuration
 ### _Windows PowerShell_

@@ -41,6 +41,22 @@ def update(request: UserRequest, user: CurrentUser, db: DbSession):
 
 @user.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_by_id(user_id: UUID, repo: UserRepo, db: DbSession):
+    if not repo.soft_delete_by_id(user_id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User não encontrado")
+    db.commit()
+
+
+@user.delete("/{user_id}/hard", status_code=status.HTTP_204_NO_CONTENT)
+def hard_delete_by_id(user_id: UUID, repo: UserRepo, db: DbSession):
     if not repo.delete_by_id(user_id):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User não encontrado")
     db.commit()
+
+
+@user.patch("/{user_id}/restore", response_model=UserResponse)
+def restore_by_id(user_id: UUID, repo: UserRepo, db: DbSession):
+    user = repo.restore_by_id(user_id)
+    if user is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuário não encontrado ou não excluído")
+    db.commit()
+    return user
