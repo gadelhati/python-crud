@@ -1,15 +1,14 @@
 # app/models/permission.py
-
 from sqlalchemy import Enum, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import TYPE_CHECKING
 
 from app.enum.permission_action import EnumPermissionAction
 from app.models.base import EntityBase, TimestampMixin
 from app.models.join import role_permissions
-from app.models.role import Role
 
-# if TYPE_CHECKING:
-#     from app.models.role import Role
+if TYPE_CHECKING:
+    from app.models.role import Role
 
 
 class Permission(TimestampMixin, EntityBase):

@@ -1,12 +1,15 @@
 # app/models/user.py
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import EntityBase, Role, TimestampMixin
+from app.models.base import EntityBase, TimestampMixin
 from app.models.join import user_roles
 
+if TYPE_CHECKING:
+    from app.models.role import Role
 
 class User(TimestampMixin, EntityBase):
     """User entity representing a user in the system."""
