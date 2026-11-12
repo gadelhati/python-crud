@@ -1,13 +1,14 @@
+# app/routers/base.py
 from fastapi import APIRouter
 
-router = APIRouter()
+base = APIRouter()
 
 
-@router.get("/")
+@base.get("/")
 def hello() -> dict[str, str]:
     return {"message": "Hello, World!"}
 
 
-@router.get("/health")
+@base.get("/health")
 def health() -> dict[str, str]:
     return {"status": "healthy"}

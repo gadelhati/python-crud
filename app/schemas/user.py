@@ -1,17 +1,17 @@
+# app/schemas/user.py
 from pydantic import BaseModel, ConfigDict
 
 
-class CursoBase(BaseModel):
+class UserBase(BaseModel):
     titulo: str
     descricao: str
     carga_horaria: int
     qtd_exercicios: int
 
 
-class CursoRequest(CursoBase): ...
+class UserRequest(UserBase): ...
 
 
-class CursoResponse(CursoBase):
-    id: int
-
+class UserResponse(UserBase):
     model_config = ConfigDict(from_attributes=True)
+    id: int
