@@ -13,11 +13,10 @@ class User(IdMixin, TimestampMixin, Base):
 
     __tablename__ = "users"
 
-    titulo: Mapped[str] = mapped_column(String(100))
-    descricao: Mapped[str] = mapped_column(String(255))
-    carga_horaria: Mapped[int]
-    qtd_exercicios: Mapped[int]
+    username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(256))
     deleted_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     def __repr__(self) -> str:
-        return f"User(id={self.id!r}, titulo={self.titulo!r})"
+        return f"User(id={self.id!r}, username={self.username!r})"

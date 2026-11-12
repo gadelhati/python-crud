@@ -2,17 +2,16 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class UserBase(BaseModel):
-    titulo: str
-    descricao: str
-    carga_horaria: int
-    qtd_exercicios: int
+    username: str = Field(min_length=3, max_length=50)
+    email: str = Field(max_length=255)
 
 
-class UserRequest(UserBase): ...
+class UserRequest(UserBase):
+    password: str = Field(min_length=8, max_length=128)
 
 
 class UserResponse(UserBase):

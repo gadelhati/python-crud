@@ -13,16 +13,18 @@ class Base(DeclarativeBase):
 
 
 def initialize_database() -> None:
-    """Creates the schema and applies SQLite development compatibility changes."""
+    """Creates the development schema and resets incompatible user schemas."""
     Base.metadata.create_all(bind=engine)
 
     if engine.dialect.name != "sqlite":
         return
 
     columns = {column["name"] for column in inspect(engine).get_columns("users")}
-    if "deleted_at" not in columns:
+    required_columns = {"username", "email", "password_hash", "deleted_at"}
+    if not required_columns.issubset(columns):
         with engine.begin() as connection:
-            connection.execute(text("ALTER TABLE users ADD COLUMN deleted_at DATETIME"))
+            connection.execute(text("DROP TABLE users"))
+        Base.metadata.create_all(bind=engine)
 
 
 def get_db():

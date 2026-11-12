@@ -6,13 +6,20 @@ from fastapi import APIRouter, HTTPException, Query, status
 from app.dependencies import CurrentUser, DbSession, UserRepo
 from app.models.user import User
 from app.schemas.user import UserRequest, UserResponse
+from app.services.password import hash_password
 
 user = APIRouter(prefix="/user", tags=["user"])
 
 
 @user.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create(request: UserRequest, repo: UserRepo, db: DbSession):
-    user = repo.save(User(**request.model_dump()))
+    user = repo.save(
+        User(
+            username=request.username,
+            email=request.email,
+            password_hash=hash_password(request.password),
+        )
+    )
     db.commit()
     return user
 
@@ -33,8 +40,9 @@ def find_by_id(user: CurrentUser):
 
 @user.put("/{user_id}", response_model=UserResponse)
 def update(request: UserRequest, user: CurrentUser, db: DbSession):
-    for field, value in request.model_dump().items():
-        setattr(user, field, value)
+    user.username = request.username
+    user.email = request.email
+    user.password_hash = hash_password(request.password)
     db.commit()
     return user
 

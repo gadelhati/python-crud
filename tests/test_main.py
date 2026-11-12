@@ -2,7 +2,9 @@ from uuid import UUID
 
 from fastapi.testclient import TestClient
 
+from app.database import SessionLocal
 from app.main import app
+from app.models.user import User
 
 client = TestClient(app)
 
@@ -46,10 +48,9 @@ def test_user_list_endpoint_initializes_database_schema() -> None:
 
 def test_user_endpoints_use_uuid_identifiers() -> None:
     payload = {
-        "titulo": "Python básico",
-        "descricao": "Curso introdutório",
-        "carga_horaria": 20,
-        "qtd_exercicios": 10,
+        "username": "python_user",
+        "email": "python.user@example.com",
+        "password": "secure-password",
     }
 
     with TestClient(app) as application_client:
@@ -64,14 +65,21 @@ def test_user_endpoints_use_uuid_identifiers() -> None:
     assert get_response.status_code == 200
     assert get_response.json()["id"] == str(user_id)
     assert get_response.json()["deleted_at"] is None
+    assert "password" not in get_response.json()
+    assert "password_hash" not in get_response.json()
+
+    with SessionLocal() as db:
+        stored_user = db.get(User, user_id)
+        assert stored_user is not None
+        assert stored_user.password_hash != payload["password"]
+        assert stored_user.password_hash.startswith("pbkdf2_sha256$")
 
 
 def test_user_soft_delete_restore_and_hard_delete() -> None:
     payload = {
-        "titulo": "Python avançado",
-        "descricao": "Curso avançado",
-        "carga_horaria": 40,
-        "qtd_exercicios": 20,
+        "username": "advanced_user",
+        "email": "advanced.user@example.com",
+        "password": "another-secure-password",
     }
 
     with TestClient(app) as application_client:
