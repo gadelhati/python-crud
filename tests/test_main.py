@@ -32,3 +32,11 @@ def test_health_endpoint_returns_expected_response() -> None:
 
     assert response.status_code == 200
     assert response.json() == {"status": "healthy"}
+
+
+def test_user_list_endpoint_initializes_database_schema() -> None:
+    with TestClient(app) as application_client:
+        response = application_client.get("/api/user")
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
