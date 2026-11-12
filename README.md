@@ -78,22 +78,28 @@ python -m zipfile -l dist/python_template-1.0.0-py3-none-any.whl
 
 # run application (*)
 python -m app.main
+
+# concat
+py -3.13 -m venv .venv; .venv\Scripts\Activate.ps1; python -m pip install --upgrade pip; python -m pip install -e ".[dev]"; python -m build; python -m zipfile -l dist/python_template-1.0.0-py3-none-any.whl; python -m app.main
 ```
 
 ## Ruff linter formatting
 
 ```bash
-# checks whether the code follows the formatting standard
-python -m ruff format --check .
-
 # automatically formats the code to follow the standard
 python -m ruff format .
+
+# automatic correction
+ruff check --fix .
+
+# checks whether the code follows the formatting standard
+python -m ruff format --check .
 
 # identifies linting issues and potential code errors
 python -m ruff check .
 
-# automatic correction
-ruff check --fix .
+# concat:
+python -m ruff format .; python -m ruff check --fix .; python -m ruff format --check .; python -m ruff check .
 ```
 
 ## Running Tests
