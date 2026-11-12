@@ -1,27 +1,11 @@
 # app/database.py
-from app.models.base import Base
-from sqlalchemy import create_engine, inspect, text
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///db.sqlite3"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-# def initialize_database() -> None:
-#     """Creates the development schema and resets incompatible user schemas."""
-#     Base.metadata.create_all(bind=engine)
-
-#     if engine.dialect.name != "sqlite":
-#         return
-
-#     columns = {column["name"] for column in inspect(engine).get_columns("users")}
-#     required_columns = {"username", "email", "password_hash", "deleted_at"}
-#     if not required_columns.issubset(columns):
-#         with engine.begin() as connection:
-#             connection.execute(text("DROP TABLE users"))
-#         Base.metadata.create_all(bind=engine)
 
 
 def get_db():
