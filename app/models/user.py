@@ -4,11 +4,10 @@ from datetime import datetime
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.database import Base
-from app.models.base import IdMixin, TimestampMixin
+from app.models.base import EntityBase, TimestampMixin
 
 
-class User(IdMixin, TimestampMixin, Base):
+class User(TimestampMixin, EntityBase):
     """User entity representing a user in the system."""
 
     __tablename__ = "users"

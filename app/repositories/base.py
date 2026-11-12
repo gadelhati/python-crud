@@ -6,9 +6,9 @@ from uuid import UUID
 from sqlalchemy import exists, func, select
 from sqlalchemy.orm import Session
 
-from app.database import Base
+from app.models.base import Base, EntityBase
 
-T = TypeVar("T", bound=Base)
+T = TypeVar("T", bound=EntityBase)
 
 
 class BaseRepository[T: Base]:
