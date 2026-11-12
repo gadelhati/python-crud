@@ -2,7 +2,8 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, Uuid, func
+from sqlalchemy import UUID as UUID_
+from sqlalchemy import DateTime, ForeignKey, Integer, Uuid, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -22,6 +23,19 @@ class TimestampMixin:
     created_at: Mapped[datetime] = mapped_column(DateTime(UTC), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(UTC), server_default=func.now(), onupdate=func.now()
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(UTC))
+    created_by: Mapped[UUID | None] = mapped_column(
+        UUID_(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    updated_by: Mapped[UUID | None] = mapped_column(
+        UUID_(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    deleted_by: Mapped[UUID | None] = mapped_column(
+        UUID_(as_uuid=True), ForeignKey("users.id"), nullable=True
+    )
+    version_id: Mapped[int] = mapped_column(
+        Integer, default=1, nullable=False, doc="Optimistic locking version"
     )
 
 
