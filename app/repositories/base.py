@@ -1,6 +1,7 @@
 # app/repositories/base.py
 from collections.abc import Sequence
 from typing import TypeVar
+from uuid import UUID
 
 from sqlalchemy import exists, func, select
 from sqlalchemy.orm import Session
@@ -11,7 +12,7 @@ T = TypeVar("T", bound=Base)
 
 
 class BaseRepository[T: Base]:
-    """Generic repository for entities with an integer primary key."""
+    """Generic repository for entities with a UUID primary key."""
 
     model: type[T]
 
@@ -27,11 +28,11 @@ class BaseRepository[T: Base]:
         """Returns the total count of records."""
         return self.db.scalar(select(func.count()).select_from(self.model)) or 0
 
-    def find_by_id(self, id: int) -> T | None:
+    def find_by_id(self, id: UUID) -> T | None:
         """Returns the record by ID, or None if it doesn't exist."""
         return self.db.get(self.model, id)
 
-    def exists_by_id(self, id: int) -> bool:
+    def exists_by_id(self, id: UUID) -> bool:
         """Checks if a record with the given ID exists."""
         return bool(self.db.scalar(select(exists().where(self.model.id == id))))
 
@@ -45,7 +46,7 @@ class BaseRepository[T: Base]:
         self.db.refresh(entity)
         return entity
 
-    def delete_by_id(self, id: int) -> bool:
+    def delete_by_id(self, id: UUID) -> bool:
         """Deletes by ID. Returns True if any record was deleted."""
         entity = self.db.get(self.model, id)
         if entity is None:

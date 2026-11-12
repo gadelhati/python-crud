@@ -1,5 +1,6 @@
 # app/dependencies.py
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -18,7 +19,7 @@ def get_user_repository(db: DbSession) -> UserRepository:
 UserRepo = Annotated[UserRepository, Depends(get_user_repository)]
 
 
-def get_user_or_404(user_id: int, repo: UserRepo) -> User:
+def get_user_or_404(user_id: UUID, repo: UserRepo) -> User:
     user = repo.find_by_id(user_id)
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User não encontrado")
