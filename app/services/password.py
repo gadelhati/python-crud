@@ -10,20 +10,20 @@ _SALT_SIZE = 16
 def hash_password(password: str) -> str:
     """Returns a PBKDF2-HMAC-SHA256 hash suitable for database storage."""
     salt = secrets.token_bytes(_SALT_SIZE)
-    password_hash = hashlib.pbkdf2_hmac(
+    password = hashlib.pbkdf2_hmac(
         "sha256",
         password.encode("utf-8"),
         salt,
         _ITERATIONS,
     )
     encoded_salt = base64.urlsafe_b64encode(salt).decode("ascii")
-    encoded_hash = base64.urlsafe_b64encode(password_hash).decode("ascii")
+    encoded_hash = base64.urlsafe_b64encode(password).decode("ascii")
     return f"pbkdf2_sha256${_ITERATIONS}${encoded_salt}${encoded_hash}"
 
 
-def verify_password(password: str, stored_password_hash: str) -> bool:
+def verify_password(password: str, stored_password: str) -> bool:
     """Checks a plaintext password against a stored PBKDF2 hash."""
-    algorithm, iterations, encoded_salt, encoded_hash = stored_password_hash.split("$")
+    algorithm, iterations, encoded_salt, encoded_hash = stored_password.split("$")
     if algorithm != "pbkdf2_sha256":
         return False
 

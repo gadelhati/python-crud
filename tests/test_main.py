@@ -93,13 +93,12 @@ def test_user_endpoints_use_uuid_identifiers() -> None:
         assert get_response.json()["id"] == str(user_id)
         assert get_response.json()["deleted_at"] is None
         assert "password" not in get_response.json()
-        assert "password_hash" not in get_response.json()
 
         with SessionLocal() as db:
             stored_user = db.get(User, user_id)
             assert stored_user is not None
-            assert stored_user.password_hash != payload["password"]
-            assert stored_user.password_hash.startswith("pbkdf2_sha256$")
+            assert stored_user.password != payload["password"]
+            assert stored_user.password.startswith("pbkdf2_sha256$")
 
         hard_delete_response = application_client.delete(
             f"/api/user/{user_id}/hard",

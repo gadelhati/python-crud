@@ -12,7 +12,7 @@ auth = APIRouter(prefix="/login", tags=["Authentication"])
 @auth.post("", response_model=TokenResponse)
 def login(request: LoginRequest, repo: UserRepo) -> TokenResponse:
     user = repo.find_by_username(request.username)
-    if user is None or not verify_password(request.password, user.password_hash):
+    if user is None or not verify_password(request.password, user.password):
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED,
             "Credenciais inválidas",

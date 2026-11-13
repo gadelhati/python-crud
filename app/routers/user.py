@@ -17,7 +17,7 @@ def create(request: UserRequest, repo: UserRepo):
         User(
             username=request.username,
             email=request.email,
-            password_hash=hash_password(request.password),
+            password=hash_password(request.password),
         )
     )
     return user
@@ -41,7 +41,7 @@ def find_by_id(_: AuthenticatedUser, user: CurrentUser):
 def update(request: UserRequest, _: AuthenticatedUser, user: CurrentUser, db: DbSession):
     user.username = request.username
     user.email = request.email
-    user.password_hash = hash_password(request.password)
+    user.password = hash_password(request.password)
     return user
 
 
