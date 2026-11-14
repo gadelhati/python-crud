@@ -18,6 +18,8 @@ def create(request: UserRequest, repo: UserRepo):
             username=request.username,
             email=request.email,
             password=hash_password(request.password),
+            first_name=request.first_name,
+            last_name=request.last_name,
         )
     )
     return user
@@ -42,6 +44,8 @@ def update(request: UserRequest, _: AuthenticatedUser, user: CurrentUser, db: Db
     user.username = request.username
     user.email = request.email
     user.password = hash_password(request.password)
+    user.first_name = request.first_name
+    user.last_name = request.last_name
     return user
 
 

@@ -73,6 +73,8 @@ def test_user_endpoints_use_uuid_identifiers() -> None:
         "username": f"python_user_{unique_suffix}",
         "email": f"python.user.{unique_suffix}@example.com",
         "password": "secure-password",
+        "first_name": "Python",
+        "last_name": "User",
     }
 
     with TestClient(app) as application_client:
@@ -92,6 +94,8 @@ def test_user_endpoints_use_uuid_identifiers() -> None:
         assert get_response.status_code == 200
         assert get_response.json()["id"] == str(user_id)
         assert get_response.json()["deleted_at"] is None
+        assert get_response.json()["first_name"] == payload["first_name"]
+        assert get_response.json()["last_name"] == payload["last_name"]
         assert "password" not in get_response.json()
 
         with SessionLocal() as db:
@@ -108,17 +112,52 @@ def test_user_endpoints_use_uuid_identifiers() -> None:
     assert hard_delete_response.status_code == 204
 
 
+def test_user_names_can_be_null() -> None:
+    unique_suffix = uuid4().hex
+    payload = {
+        "username": f"nameless_user_{unique_suffix}",
+        "email": f"nameless.user.{unique_suffix}@example.com",
+        "password": "secure-password",
+        "first_name": None,
+        "last_name": None,
+    }
+
+    with TestClient(app) as application_client:
+        create_response = application_client.post("/api/user", json=payload)
+
+        assert create_response.status_code == 201
+        user = create_response.json()
+        assert user["first_name"] is None
+        assert user["last_name"] is None
+
+        headers = authentication_headers(
+            application_client,
+            payload["username"],
+            payload["password"],
+        )
+        hard_delete_response = application_client.delete(
+            f"/api/user/{user['id']}/hard",
+            headers=headers,
+        )
+
+    assert hard_delete_response.status_code == 204
+
+
 def test_user_soft_delete_restore_and_hard_delete() -> None:
     unique_suffix = uuid4().hex
     actor_payload = {
         "username": f"admin_user_{unique_suffix}",
         "email": f"admin.user.{unique_suffix}@example.com",
         "password": "another-secure-password",
+        "first_name": "Python",
+        "last_name": "User",
     }
     payload = {
         "username": f"advanced_user_{unique_suffix}",
         "email": f"advanced.user.{unique_suffix}@example.com",
         "password": "another-secure-password",
+        "first_name": "Python",
+        "last_name": "User",
     }
 
     with TestClient(app) as application_client:
@@ -145,11 +184,11 @@ def test_user_soft_delete_restore_and_hard_delete() -> None:
             headers=headers,
         )
 
-    assert actor_response.status_code == 201
-    assert soft_delete_response.status_code == 204
-    assert get_deleted_response.status_code == 404
-    assert restore_response.status_code == 200
-    assert restore_response.json()["deleted_at"] is None
-    assert hard_delete_response.status_code == 204
-    assert get_hard_deleted_response.status_code == 404
-    assert hard_delete_actor_response.status_code == 204
+    assert actor_response.status_code == 201, actor_response.json()
+    assert soft_delete_response.status_code == 204, soft_delete_response.json()
+    assert get_deleted_response.status_code == 404, get_deleted_response.json()
+    assert restore_response.status_code == 200, restore_response.json()
+    assert restore_response.json()["deleted_at"] is None, restore_response.json()
+    assert hard_delete_response.status_code == 204, hard_delete_response.json()
+    assert get_hard_deleted_response.status_code == 404, get_hard_deleted_response.json()
+    assert hard_delete_actor_response.status_code == 204, hard_delete_actor_response.json()

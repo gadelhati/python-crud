@@ -3,8 +3,4 @@ from app.models.permission import Permission
 from app.models.role import Role
 from app.models.user import User
 
-__all__ = ["User"]
-__all__ = ["user_roles"]
-__all__ = ["Role"]
-__all__ = ["role_permissions"]
-__all__ = ["Permission"]
+__all__ = ["User", "user_roles", "Role", "role_permissions", "Permission"]
