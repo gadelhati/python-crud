@@ -20,8 +20,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Python Template", version="1.0.0", lifespan=lifespan)
 app.include_router(base)
-app.include_router(auth, prefix="/api")
-app.include_router(user, prefix="/api", tags=["Users"])
+app.include_router(auth)
+app.include_router(user)
 
 
 if __name__ == "__main__":

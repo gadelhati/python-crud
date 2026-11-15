@@ -8,7 +8,7 @@ from app.models.user import User
 from app.schemas.user import UserRequest, UserResponse
 from app.services.password import hash_password
 
-user = APIRouter(prefix="/user", tags=["user"])
+user = APIRouter(prefix="/user", tags=["User"])
 
 
 @user.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
