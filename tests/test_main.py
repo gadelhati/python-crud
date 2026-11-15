@@ -21,7 +21,7 @@ def authentication_headers(
     password: str,
 ) -> dict[str, str]:
     response = application_client.post(
-        "/api/login",
+        "/login",
         json={"username": username, "password": password},
     )
 
@@ -61,7 +61,7 @@ def test_health_endpoint_returns_expected_response() -> None:
 
 # def test_user_list_requires_authentication() -> None:
 #     with TestClient(app) as application_client:
-#         response = application_client.get("/api/user")
+#         response = application_client.get("/user")
 
 #     assert response.status_code == 401
 #     assert response.headers["WWW-Authenticate"] == "Bearer"
@@ -78,7 +78,7 @@ def test_user_endpoints_use_uuid_identifiers() -> None:
     }
 
     with TestClient(app) as application_client:
-        create_response = application_client.post("/api/user", json=payload)
+        create_response = application_client.post("/user", json=payload)
 
         assert create_response.status_code == 201
         user = create_response.json()
@@ -89,7 +89,7 @@ def test_user_endpoints_use_uuid_identifiers() -> None:
             payload["username"],
             payload["password"],
         )
-        get_response = application_client.get(f"/api/user/{user_id}", headers=headers)
+        get_response = application_client.get(f"/user/{user_id}", headers=headers)
 
         assert get_response.status_code == 200
         assert get_response.json()["id"] == str(user_id)
@@ -105,7 +105,7 @@ def test_user_endpoints_use_uuid_identifiers() -> None:
             assert stored_user.password.startswith("pbkdf2_sha256$")
 
         hard_delete_response = application_client.delete(
-            f"/api/user/{user_id}/hard",
+            f"/user/{user_id}/hard",
             headers=headers,
         )
 
@@ -123,7 +123,7 @@ def test_user_names_can_be_null() -> None:
     }
 
     with TestClient(app) as application_client:
-        create_response = application_client.post("/api/user", json=payload)
+        create_response = application_client.post("/user", json=payload)
 
         assert create_response.status_code == 201
         user = create_response.json()
@@ -136,7 +136,7 @@ def test_user_names_can_be_null() -> None:
             payload["password"],
         )
         hard_delete_response = application_client.delete(
-            f"/api/user/{user['id']}/hard",
+            f"/user/{user['id']}/hard",
             headers=headers,
         )
 
@@ -161,9 +161,9 @@ def test_user_soft_delete_restore_and_hard_delete() -> None:
     }
 
     with TestClient(app) as application_client:
-        actor_response = application_client.post("/api/user", json=actor_payload)
+        actor_response = application_client.post("/user", json=actor_payload)
         actor_id = actor_response.json()["id"]
-        create_response = application_client.post("/api/user", json=payload)
+        create_response = application_client.post("/user", json=payload)
         user_id = create_response.json()["id"]
         headers = authentication_headers(
             application_client,
@@ -171,16 +171,16 @@ def test_user_soft_delete_restore_and_hard_delete() -> None:
             actor_payload["password"],
         )
 
-        soft_delete_response = application_client.delete(f"/api/user/{user_id}", headers=headers)
-        get_deleted_response = application_client.get(f"/api/user/{user_id}", headers=headers)
-        restore_response = application_client.patch(f"/api/user/{user_id}/restore", headers=headers)
+        soft_delete_response = application_client.delete(f"/user/{user_id}", headers=headers)
+        get_deleted_response = application_client.get(f"/user/{user_id}", headers=headers)
+        restore_response = application_client.patch(f"/user/{user_id}/restore", headers=headers)
         hard_delete_response = application_client.delete(
-            f"/api/user/{user_id}/hard",
+            f"/user/{user_id}/hard",
             headers=headers,
         )
-        get_hard_deleted_response = application_client.get(f"/api/user/{user_id}", headers=headers)
+        get_hard_deleted_response = application_client.get(f"/user/{user_id}", headers=headers)
         hard_delete_actor_response = application_client.delete(
-            f"/api/user/{actor_id}/hard",
+            f"/user/{actor_id}/hard",
             headers=headers,
         )
 

@@ -1,7 +1,7 @@
 # app/routers/base.py
 from fastapi import APIRouter
 
-base = APIRouter(prefix="/admin", tags=["Base"])
+base = APIRouter(prefix="", tags=["Base"])
 
 
 @base.get("/")
