@@ -1,3 +1,4 @@
+# app/repository/base.py
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from uuid import UUID
@@ -28,15 +29,19 @@ class BaseRepository[T: EntityBase]:
     ) -> Sequence[T]:
         stmt = (
             self._select(include_deleted=include_deleted)
-            .order_by(self.model.id)
+            .order_by(self.model.created_at.desc())
             .offset(offset)
             .limit(limit)
         )
         return self.db.scalars(stmt).all()
 
     def count(self, *, include_deleted: bool = False) -> int:
-        subquery = self._select(include_deleted=include_deleted).subquery()
-        return self.db.scalar(select(func.count()).select_from(subquery)) or 0
+        stmt = (
+            self._select(include_deleted=include_deleted)
+            .with_only_columns(func.count(self.model.id), maintain_column_froms=True)
+            .order_by(None)
+        )
+        return self.db.scalar(stmt) or 0
 
     def find_by_id(self, id: UUID, *, include_deleted: bool = False) -> T | None:
         stmt = self._select(include_deleted=include_deleted).where(self.model.id == id)
@@ -54,10 +59,7 @@ class BaseRepository[T: EntityBase]:
 
     def save(self, entity: T) -> T:
         """Inserts or updates (flush only)."""
-        if entity.id is not None:
-            entity = self.db.merge(entity)
-        else:
-            self.db.add(entity)
+        self.db.add(entity)
         self.db.flush()
         self.db.refresh(entity)
         return entity
@@ -85,19 +87,19 @@ class SoftDeleteRepository[T: EntityBase](BaseRepository[T]):
         if entity is None:
             return False
         entity.deleted_at = datetime.now(UTC)
-        if hasattr(entity, "deleted_by"):
-            entity.deleted_by = deleted_by
+        entity.deleted_by = deleted_by
         self.db.flush()
         return True
 
-    def restore_by_id(self, id: UUID) -> T | None:
+    def restore_by_id(self, id: UUID, restored_by: UUID | None = None) -> T | None:
         """Restores a soft-deleted record, or returns None when not restorable."""
         entity = self.find_by_id(id, include_deleted=True)
         if entity is None or entity.deleted_at is None:
             return None
         entity.deleted_at = None
-        if hasattr(entity, "deleted_by"):
-            entity.deleted_by = None
+        entity.deleted_by = None
+        if restored_by is not None:
+            entity.updated_by = restored_by
         self.db.flush()
         self.db.refresh(entity)
         return entity
