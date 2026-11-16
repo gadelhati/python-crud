@@ -2,9 +2,8 @@
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import UUID as UUID_
 from sqlalchemy import DateTime, ForeignKey, Integer, Uuid, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
 
 class Base(DeclarativeBase):
@@ -25,21 +24,44 @@ class TimestampMixin:
         DateTime(UTC), server_default=func.now(), onupdate=func.now()
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(UTC))
-    created_by: Mapped[UUID | None] = mapped_column(
-        UUID_(as_uuid=True), ForeignKey("users.id"), nullable=True
-    )
-    updated_by: Mapped[UUID | None] = mapped_column(
-        UUID_(as_uuid=True), ForeignKey("users.id"), nullable=True
-    )
-    deleted_by: Mapped[UUID | None] = mapped_column(
-        UUID_(as_uuid=True), ForeignKey("users.id"), nullable=True
-    )
+
+    @declared_attr
+    def created_by(cls) -> Mapped[UUID | None]:
+        return mapped_column(
+            Uuid(as_uuid=True),
+            ForeignKey("users.id", name=f"fk_{cls.__tablename__}_created_by", use_alter=True),
+            nullable=True,
+        )
+
+    @declared_attr
+    def updated_by(cls) -> Mapped[UUID | None]:
+        return mapped_column(
+            Uuid(as_uuid=True),
+            ForeignKey("users.id", name=f"fk_{cls.__tablename__}_created_by", use_alter=True),
+            nullable=True,
+        )
+
+    @declared_attr
+    def deleted_by(cls) -> Mapped[UUID | None]:
+        return mapped_column(
+            Uuid(as_uuid=True),
+            ForeignKey("users.id", name=f"fk_{cls.__tablename__}_created_by", use_alter=True),
+            nullable=True,
+        )
+
     version_id: Mapped[int] = mapped_column(
         Integer, default=1, nullable=False, doc="Optimistic locking version"
     )
 
+    @declared_attr.directive
+    def __mapper_args__(cls) -> dict:
+        return {
+            "version_id_col": cls.version_id,
+            "version_id_generator": lambda version: (version or 0) + 1,
+        }
 
-class EntityBase(IdMixin, Base):
+
+class EntityBase(Base, IdMixin, TimestampMixin):
     """Base class for entities with a UUID primary key."""
 
     __abstract__ = True

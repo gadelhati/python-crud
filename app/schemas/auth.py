@@ -1,4 +1,4 @@
-from pydantic import EmailStr, Field, field_validator
+from pydantic import ConfigDict, EmailStr, Field, field_validator
 
 from app.schemas.base import SchemaBase
 from app.validations.user import UserValidation
@@ -7,8 +7,14 @@ from app.validations.user import UserValidation
 class LoginRequest(SchemaBase):
     """Schema for authentication requests."""
 
-    username: str
-    password: str
+    model_config = ConfigDict(str_strip_whitespace=False)
+
+    username: str = Field(
+        min_length=UserValidation.USERNAME_MIN_LENGTH, max_length=UserValidation.USERNAME_MAX_LENGTH
+    )
+    password: str = Field(
+        min_length=UserValidation.PASSWORD_MIN_LENGTH, max_length=UserValidation.PASSWORD_MAX_LENGTH
+    )
 
     @field_validator("username")
     @classmethod
@@ -35,13 +41,15 @@ class TokenResponse(SchemaBase):
 class PasswordResetRequest(SchemaBase):
     """Schema for password reset requests."""
 
-    email: EmailStr
+    email: EmailStr = Field(max_length=UserValidation.PASSWORD_MAX_LENGTH)
 
 
 class PasswordResetConfirmRequest(SchemaBase):
     """Schema for password reset confirmation."""
 
-    token: str
+    model_config = ConfigDict(str_strip_whitespace=False)
+
+    token: str = Field(min_length=1)
     new_password: str = Field(
         min_length=UserValidation.PASSWORD_MIN_LENGTH, max_length=UserValidation.PASSWORD_MAX_LENGTH
     )

@@ -1,10 +1,10 @@
 # app/models/role.py
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, String
+from sqlalchemy import Boolean, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import EntityBase, TimestampMixin
+from app.models.base import EntityBase
 from app.models.join import role_permissions, user_roles
 
 if TYPE_CHECKING:
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class Role(TimestampMixin, EntityBase):
+class Role(EntityBase):
     """Role model"""
 
     __tablename__ = "roles"
@@ -22,12 +22,14 @@ class Role(TimestampMixin, EntityBase):
     is_default: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
+        server_default=text("false"),
         nullable=False,
         doc="Whether this role is assigned by default to new users",
     )
     is_system: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
+        server_default=text("false"),
         nullable=False,
         doc="Whether this is a system role (cannot be deleted)",
     )

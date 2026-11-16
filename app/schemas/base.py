@@ -8,20 +8,14 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.validations.user import UserValidation
 
 
-class BaseConfig:
-    """Base configuration for all schemas."""
+class SchemaBase(BaseModel):
+    """Base schema for all application schemas."""
 
     model_config = ConfigDict(
         from_attributes=True,
         str_strip_whitespace=True,
         validate_assignment=True,
     )
-
-
-class SchemaBase(BaseModel):
-    """Base schema for all application schemas."""
-
-    model_config = BaseConfig.model_config
 
 
 class SchemaAudit(SchemaBase):
@@ -55,6 +49,12 @@ class DTOPagination(SchemaBase):
     total_pages: int = Field(ge=0, description="Total number of pages")
     has_next: bool = Field(description="Whether there is a next page")
     has_prev: bool = Field(description="Whether there is a previous page")
+
+
+class PaginatedResponse[T](DTOPagination):
+    """Generic schema for paginated list responses."""
+
+    items: list[T] = Field(description="List of items for the current page")
 
 
 class ValidationError(SchemaBase):

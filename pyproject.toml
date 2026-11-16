@@ -53,3 +53,6 @@ select = [
 "app/routers/*.py" = [
     "B008",     # FastAPI-specific configuration
 ]
+"app/models/base.py" = [
+    "N805",     # 
+]

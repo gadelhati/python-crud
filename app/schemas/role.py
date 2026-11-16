@@ -2,24 +2,26 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import Field, field_validator
 
-from app.schemas.base import BaseConfig, SchemaSoftDelete
+from app.schemas.base import SchemaBase, SchemaSoftDelete
 from app.schemas.permission import PermissionResponse
-from app.validations.user import UserValidation
+from app.validations.role import RoleValidation
 
 
-class RoleBase(BaseModel):
+class RoleBase(SchemaBase):
     """Base schema for role attributes."""
 
-    name: str
-    description: str | None = None
+    name: str = Field(
+        min_length=RoleValidation.NAME_MIN_LENGTH, max_length=RoleValidation.NAME_MAX_LENGTH
+    )
+    description: str | None = Field(default=None, max_length=RoleValidation.DESCRIPTION_MAX_LENGTH)
     is_default: bool = False
 
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
-        result = UserValidation.validate_name(v, "Role name")
+        result = RoleValidation.validate_name(v, "Role name")
         if result is None:
             raise ValueError("Role name is required")
         return result
@@ -27,7 +29,7 @@ class RoleBase(BaseModel):
     @field_validator("description")
     @classmethod
     def validate_description(cls, v: str | None) -> str | None:
-        return UserValidation.validate_name(v, "Description")
+        return RoleValidation.validate_name(v, "Description")
 
 
 class RoleRequest(RoleBase):
@@ -35,7 +37,7 @@ class RoleRequest(RoleBase):
 
     permission_ids: list[UUID] | None = Field(
         default=None,
-        max_length=UserValidation.MAX_PERMISSIONS_PER_ROLE,
+        max_length=RoleValidation.MAX_PERMISSIONS_PER_ROLE,
     )
 
     @field_validator("permission_ids")
@@ -47,12 +49,10 @@ class RoleRequest(RoleBase):
         if v is None:
             return v
 
-        if len(v) != len(set(v)):
+        if len(v) != len(set(v)) != len(set(v)):
             raise ValueError("Duplicate permissions not allowed")
 
         return v
-
-    model_config = BaseConfig.model_config
 
 
 class RoleResponse(SchemaSoftDelete):

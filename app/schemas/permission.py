@@ -1,30 +1,30 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import Field
 
 from app.enum.permission_action import EnumPermissionAction
 from app.schemas.base import (
-    SchemaSoftDelete,
+    SchemaBase,
 )
+from app.validations.permission import PermissionValidation
 
 
-class PermissionBase(BaseModel):
+class PermissionBase(SchemaBase):
     """Base schema for permission attributes."""
 
-    name: str
-    description: str | None = None
+    name: str = Field(
+        min_length=PermissionValidation.NAME_MIN_LENGTH,
+        max_length=PermissionValidation.NAME_MAX_LENGTH,
+    )
+    description: str | None = Field(
+        default=None, max_length=PermissionValidation.DESCRIPTION_MAX_LENGTH
+    )
     action: EnumPermissionAction
 
 
 class PermissionRequest(PermissionBase):
     """Schema for permission creation and update requests."""
 
-    pass
 
-
-class PermissionResponse(SchemaSoftDelete):
+class PermissionResponse(PermissionBase):
     """Schema for permission responses."""
-
-    name: str
-    description: str | None = None
-    action: EnumPermissionAction

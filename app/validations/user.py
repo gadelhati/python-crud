@@ -1,11 +1,15 @@
+# app/validation/user.py
 import re
 
 
 class UserValidation:
-    """Centralized validation rules."""
+    """Centralized user validation rules."""
 
     USERNAME_MIN_LENGTH = 3
     USERNAME_MAX_LENGTH = 100
+
+    EMAIL_MIN_LENGTH = 3
+    EMAIL_MAX_LENGTH = 100
 
     PASSWORD_MIN_LENGTH = 12
     PASSWORD_MAX_LENGTH = 128
@@ -13,7 +17,6 @@ class UserValidation:
     NAME_MAX_LENGTH = 100
 
     MAX_ROLES_PER_USER = 10
-    MAX_PERMISSIONS_PER_ROLE = 50
 
     @staticmethod
     def validate_username(v: str) -> str:
