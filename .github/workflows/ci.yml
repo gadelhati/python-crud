@@ -32,6 +32,6 @@ jobs:
 
       - name: Run tests
         env:
-          JWT_SECRET_KEY: 12345678901234567890123456789012
-          DATABASE_URL: sqlite:///db.sqlite3
+          UVICORN_JWT_SECRET_KEY: 12345678901234567890123456789012
+          UVICORN_DATABASE_URL: sqlite:///db.sqlite3
         run: python -m pytest -v
