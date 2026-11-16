@@ -30,6 +30,9 @@ jobs:
       - name: Check formatting
         run: python -m ruff format --check .
 
+      - name: Validate environment
+        run: python -c "import os; v=os.getenv('UVICORN_JWT_SECRET_KEY', ''); print(f'JWT length={len(v)}, valid={len(v) >= 32}, scientific={\"E+\" in v.upper()}')"
+        
       - name: Run tests
         env:
           UVICORN_JWT_SECRET_KEY: replace-with-a-secure-secret-of-at-least-32-characters
