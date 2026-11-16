@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from app.schemas.base import BaseConfig, SchemaSoftDelete
 from app.schemas.permission import PermissionResponse
-from app.validations.validation import Validation
+from app.validations.user import UserValidation
 
 
 class RoleBase(BaseModel):
@@ -19,7 +19,7 @@ class RoleBase(BaseModel):
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
-        result = Validation.validate_name(v, "Role name")
+        result = UserValidation.validate_name(v, "Role name")
         if result is None:
             raise ValueError("Role name is required")
         return result
@@ -27,7 +27,7 @@ class RoleBase(BaseModel):
     @field_validator("description")
     @classmethod
     def validate_description(cls, v: str | None) -> str | None:
-        return Validation.validate_name(v, "Description")
+        return UserValidation.validate_name(v, "Description")
 
 
 class RoleRequest(RoleBase):
@@ -35,7 +35,7 @@ class RoleRequest(RoleBase):
 
     permission_ids: list[UUID] | None = Field(
         default=None,
-        max_length=Validation.MAX_PERMISSIONS_PER_ROLE,
+        max_length=UserValidation.MAX_PERMISSIONS_PER_ROLE,
     )
 
     @field_validator("permission_ids")

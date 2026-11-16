@@ -1,7 +1,7 @@
 from pydantic import EmailStr, Field, field_validator
 
 from app.schemas.base import SchemaBase
-from app.validations.validation import Validation
+from app.validations.user import UserValidation
 
 
 class LoginRequest(SchemaBase):
@@ -15,9 +15,10 @@ class LoginRequest(SchemaBase):
     def validate_username(cls, v: str) -> str:
         v = v.strip()
 
-        if len(v) < Validation.USERNAME_MIN_LENGTH:
+        if len(v) < UserValidation.USERNAME_MIN_LENGTH:
             raise ValueError(
-                f"Username or email must be at least {Validation.USERNAME_MIN_LENGTH} characters"
+                f"Username or email must be at least "
+                f"{UserValidation.USERNAME_MIN_LENGTH} characters"
             )
 
         return v
@@ -41,9 +42,11 @@ class PasswordResetConfirmRequest(SchemaBase):
     """Schema for password reset confirmation."""
 
     token: str
-    new_password: str = Field(min_length=8, max_length=128)
+    new_password: str = Field(
+        min_length=UserValidation.PASSWORD_MIN_LENGTH, max_length=UserValidation.PASSWORD_MAX_LENGTH
+    )
 
     @field_validator("new_password")
     @classmethod
     def validate_new_password(cls, v: str) -> str:
-        return Validation.validate_password(v)
+        return UserValidation.validate_password(v)

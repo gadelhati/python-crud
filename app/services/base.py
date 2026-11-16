@@ -123,7 +123,6 @@ class ServiceBase[
         except SQLAlchemyError:
             self.db.rollback()
             raise ServiceError(f"Error creating {self._name()}", code="integrity_error") from None
-        self._commit()
         return self._to_dto(entity)
 
     def update(self, id: UUID, dto: U, current_user_id: UUID | None = None) -> R:
@@ -131,20 +130,17 @@ class ServiceBase[
         for field, value in dto.model_dump(exclude_unset=True).items():
             setattr(entity, field, value)
         self._stamp(entity, current_user_id)
-        self._commit()
         return self._to_dto(entity)
 
     def delete(self, id: UUID) -> bool:
         """Hard delete."""
         if not self.repository.delete_by_id(id):
             raise ServiceError(f"{self._name()} with id {id} not found", code="not_found")
-        self._commit()
         return True
 
     def soft_delete(self, id: UUID, current_user_id: UUID | None = None) -> bool:
         if not self.repository.soft_delete_by_id(id, current_user_id):
             raise ServiceError(f"{self._name()} with id {id} not found", code="not_found")
-        self._commit()
         return True
 
     def restore(self, id: UUID, current_user_id: UUID | None = None) -> R:
@@ -154,5 +150,4 @@ class ServiceBase[
                 f"{self._name()} with id {id} not found or not deleted", code="invalid_operation"
             )
         self._stamp(entity, current_user_id)
-        self._commit()
         return self._to_dto(entity)

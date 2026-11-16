@@ -11,7 +11,7 @@ from app.repositories.user import UserRepository
 from app.schemas.user import DTOUserCreate, DTOUserUpdate, UserRetrieve
 from app.services.base import ServiceBase
 from app.services.password import hash_password
-from app.validations.validation import Validation
+from app.validations.user import UserValidation
 
 logger = logging.getLogger(__name__)
 
@@ -35,23 +35,21 @@ class ServiceUser(ServiceBase[User, DTOUserCreate, DTOUserUpdate, UserRetrieve])
     def update_roles(
         self, user_id: UUID, role_ids: list[UUID], current_user_id: UUID | None = None
     ) -> UserRetrieve:
-        self._validate_ids(role_ids, Validation.MAX_ROLES_PER_USER, "roles")
+        self._validate_ids(role_ids, UserValidation.MAX_ROLES_PER_USER, "roles")
         user = self._get_or_404(user_id)
         roles = self.roles.find_by_ids(role_ids)
         self._check_found(roles, role_ids, "roles")
 
         user.roles = list(roles)
         self._stamp(user, current_user_id)
-        self._commit()
         return self._to_dto(user)
 
     def set_password(
         self, user_id: UUID, password: str, current_user_id: UUID | None = None
     ) -> bool:
         user = self._get_or_404(user_id)
-        user._password_hash = hash_password(password)
+        user.password = hash_password(password)
         self._stamp(user, current_user_id)
-        self._commit()
         return True
 
     def unlock_account(self, user_id: UUID, current_user_id: UUID | None = None) -> bool:
@@ -60,7 +58,6 @@ class ServiceUser(ServiceBase[User, DTOUserCreate, DTOUserUpdate, UserRetrieve])
         user.failed_login_attempts = 0
         user.locked_until = None
         self._stamp(user, current_user_id)
-        self._commit()
         logger.info("Account unlocked: %s by user %s", user.username, current_user_id)
         return True
 

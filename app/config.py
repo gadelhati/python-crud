@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     reload: bool = False
     jwt_secret_key: SecretStr = Field(min_length=32)
     jwt_access_token_expire_minutes: int = Field(default=30, gt=0)
+    database_url: str = Field(min_length=1)
 
     model_config = SettingsConfigDict(
         env_file=".env",

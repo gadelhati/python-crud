@@ -45,18 +45,16 @@ class ServiceAuth:
             user.locked_until = None  # lock expired
             user.failed_login_attempts = 0
 
-        if not verify_password(password, user._password_hash):
+        if not verify_password(password, user.password):
             user.failed_login_attempts += 1
             if user.failed_login_attempts >= self.MAX_FAILED_ATTEMPTS:
                 user.locked_until = now + self.LOCKOUT_DURATION
                 logger.warning("Account locked for excessive attempts: %s", username)
-            self.db.commit()
             raise invalid
 
         user.failed_login_attempts = 0
         user.locked_until = None
         user.last_login = now
-        self.db.commit()
         return user
 
     def login(self, username: str, password: str) -> dict[str, str]:

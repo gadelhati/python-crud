@@ -27,4 +27,3 @@ class ServicePermission(ServiceBase[Permission, BaseModel, BaseModel, DTOPermiss
         for action in EnumPermissionAction:
             if action.value not in existing:
                 self.permissions.save(Permission(action=action.value))
-        self._commit()

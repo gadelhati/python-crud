@@ -5,6 +5,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.validations.user import UserValidation
+
 
 class BaseConfig:
     """Base configuration for all schemas."""
@@ -75,5 +77,9 @@ class ResponseError(SchemaBase):
 class SchemaSwagger(SchemaBase):
     """Schema for Swagger authentication examples."""
 
-    username: str = Field(min_length=3, max_length=255)
-    password: str = Field(min_length=8, max_length=255)
+    username: str = Field(
+        min_length=UserValidation.USERNAME_MIN_LENGTH, max_length=UserValidation.USERNAME_MAX_LENGTH
+    )
+    password: str = Field(
+        min_length=UserValidation.PASSWORD_MIN_LENGTH, max_length=UserValidation.PASSWORD_MAX_LENGTH
+    )

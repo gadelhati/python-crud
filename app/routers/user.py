@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from app.dependencies import AuthenticatedUser, CurrentUser, DbSession, UserRepo
 from app.models.user import User
-from app.schemas.user import UserRequest, UserResponse
+from app.schemas.user import UserRequest, UserRequestWithoutPassword, UserResponse
 from app.services.password import hash_password
 
 user = APIRouter(prefix="/user", tags=["User"])
@@ -27,6 +27,7 @@ def create(request: UserRequest, repo: UserRepo):
 
 @user.get("", response_model=list[UserResponse])
 def find_all(
+    _: AuthenticatedUser,
     repo: UserRepo,
     offset: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
@@ -40,7 +41,9 @@ def find_by_id(_: AuthenticatedUser, user: CurrentUser):
 
 
 @user.put("/{user_id}", response_model=UserResponse)
-def update(request: UserRequest, _: AuthenticatedUser, user: CurrentUser, db: DbSession):
+def update(
+    request: UserRequestWithoutPassword, _: AuthenticatedUser, user: CurrentUser, db: DbSession
+):
     user.username = request.username
     user.email = request.email
     user.password = hash_password(request.password)
