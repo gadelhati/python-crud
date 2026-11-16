@@ -12,9 +12,7 @@ class RoleRepository(SoftDeleteRepository[Role]):
         stmt = self._select(include_deleted=include_deleted).where(Role.name == name)
         return self.db.scalar(stmt)
 
-    def find_by_id_with_permissions(
-        self, id, *, include_deleted: bool = False
-    ) -> Role | None:
+    def find_by_id_with_permissions(self, id, *, include_deleted: bool = False) -> Role | None:
         stmt = (
             self._select(include_deleted=include_deleted)
             .options(selectinload(Role.permissions))
