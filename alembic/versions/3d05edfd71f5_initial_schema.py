@@ -238,3 +238,7 @@ def downgrade() -> None:
 
     op.drop_table("permissions")
     # ### end Alembic commands ###
+
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        op.execute(sa.text("DROP TYPE IF EXISTS enum_permission_action"))
