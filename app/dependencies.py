@@ -13,8 +13,11 @@ from app.database import get_db
 from app.enum.permission_action import EnumPermissionAction
 from app.models.user import User
 from app.repositories.user import UserRepository
+from app.services.base import ServiceError
 from app.services.token import decode_access_token
+from fastapi.security import OAuth2PasswordBearer
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login", auto_error=False)
 DbSession = Annotated[Session, Depends(get_db)]
 
 
@@ -38,32 +41,33 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_authenticated_user(
-    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
-    repo: UserRepo,
+    token: Annotated[str | None, Depends(oauth2_scheme)],
+    db: DbSession,
 ) -> User:
-    if credentials is None:
+    if not token:
         raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED,
-            "Autenticação obrigatória",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Autenticação obrigatória",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
     try:
-        user_id = decode_access_token(credentials.credentials)
-    except (InvalidTokenError, KeyError, ValueError):
+        user_id = decode_access_token(token)
+    except ServiceError as exc:
         raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED,
-            "Token inválido ou expirado",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(exc),
             headers={"WWW-Authenticate": "Bearer"},
-        ) from None
+        ) from exc
 
-    user = repo.find_by_id(user_id)
-    if user is None:
+    user = UserRepository(db).find_by_id(user_id)
+    if user is None or not user.is_active:
         raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED,
-            "Usuário não autenticado",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuário inativo ou não encontrado.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
     return user
 
 

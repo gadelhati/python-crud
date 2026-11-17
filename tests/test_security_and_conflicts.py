@@ -11,6 +11,7 @@ from app.database import SessionLocal
 from app.models.user import User
 from app.services.base import ServiceError
 from app.services.user import ServiceUser
+from tests.conftest import authentication_headers
 
 
 def test_duplicate_username_and_email_return_409(
@@ -120,3 +121,51 @@ def test_service_base_validation_helpers() -> None:
 
         with pytest.raises(ServiceError, match="not found"):
             service._check_found([], [id1], label="roles")
+
+
+def test_deactivated_user_access_token_is_immediately_rejected(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    """Garante que um access_token emitido seja rejeitado com 401 assim que is_active=False."""
+    suffix = uuid4().hex[:8]
+    payload = {
+        "username": f"active_then_disabled_{suffix}",
+        "email": f"disabled.{suffix}@example.com",
+        "password": "StrongPassword123!",
+        "first_name": "Temp",
+        "last_name": "Active",
+    }
+
+    # 1. Cria usuário ativo e emite access_token válido
+    create_res = client.post("/user", json=payload, headers=auth_headers)
+    assert create_res.status_code == 201
+    user_id = create_res.json()["id"]
+
+    user_headers = authentication_headers(client, payload["username"], payload["password"])
+
+    # 2. Confirma que o token funciona enquanto o usuário está ativo (200 OK)
+    ok_res = client.get(f"/user/{user_id}", headers=user_headers)
+    assert ok_res.status_code == 200
+
+    # 3. Administrador desativa o usuário (is_active = False)
+    deactivate_res = client.put(
+        f"/user/{user_id}",
+        json={
+            "username": payload["username"],
+            "email": payload["email"],
+            "first_name": "Temp",
+            "last_name": "Disabled",
+            "is_active": False,
+        },
+        headers=auth_headers,
+    )
+    assert deactivate_res.status_code == 200
+    assert deactivate_res.json()["is_active"] is False
+
+    # 4. O mesmo access_token (ainda dentro do prazo de expiração) deve falhar com 401
+    blocked_res = client.get(f"/user/{user_id}", headers=user_headers)
+    assert blocked_res.status_code == 401
+    assert blocked_res.headers["WWW-Authenticate"] == "Bearer"
+
+    # Limpeza
+    assert client.delete(f"/user/{user_id}/hard", headers=auth_headers).status_code == 204
