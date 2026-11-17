@@ -22,8 +22,20 @@ from app.services.permission import ServicePermission
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
+    # Garante que as tabelas existem (opcional se você usa apenas Alembic)
     Base.metadata.create_all(bind=engine)
+
+    with SessionLocal() as db:
+        try:
+            ServicePermission(db).sync_with_enum()
+            db.commit()
+            logger.info("Permissions synchronized with EnumPermissionAction.")
+        except Exception:
+            db.rollback()
+            logger.exception("Failed to synchronize permissions on startup.")
+            raise
+
     yield
 
 
@@ -62,24 +74,6 @@ def service_error_handler(_: Request, exc: ServiceError) -> JSONResponse:
 
 
 logger = logging.getLogger(__name__)
-
-
-@asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
-    # Garante que as tabelas existem (opcional se você usa apenas Alembic)
-    Base.metadata.create_all(bind=engine)
-
-    with SessionLocal() as db:
-        try:
-            ServicePermission(db).sync_with_enum()
-            db.commit()
-            logger.info("Permissions synchronized with EnumPermissionAction.")
-        except Exception:
-            db.rollback()
-            logger.exception("Failed to synchronize permissions on startup.")
-            raise
-
-    yield
 
 
 if __name__ == "__main__":
