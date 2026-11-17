@@ -344,3 +344,76 @@ def test_login_lockout_unlock_and_refresh_token(
 
     # Limpeza
     assert client.delete(f"/user/{user_id}/hard", headers=auth_headers).status_code == 204
+
+
+def test_login_lockout_unlock_and_refresh_token_blacklist(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    """Testa bloqueio por 5 tentativas falhas, desbloqueio, rotação e blacklist de refresh token."""
+    suffix = uuid4().hex[:8]
+    payload = {
+        "username": f"lock_user_{suffix}",
+        "email": f"lock.{suffix}@example.com",
+        "password": "CorrectPassword123!",
+        "first_name": "Lock",
+        "last_name": "Test",
+    }
+
+    # Cria um usuário de teste usando o token de administrador (auth_headers)
+    create_res = client.post("/user", json=payload, headers=auth_headers)
+    assert create_res.status_code == 201, create_res.json()
+    user_id = create_res.json()["id"]
+
+    # 1. Simula 5 tentativas de login com senha errada -> deve retornar 401 em todas
+    for _ in range(5):
+        fail_res = client.post(
+            "/login",
+            json={"username": payload["username"], "password": "WrongPassword!"},
+        )
+        assert fail_res.status_code == 401
+
+    # 2. Na 6ª tentativa, mesmo acertando a senha, a conta deve estar bloqueada -> 423 Locked
+    locked_res = client.post(
+        "/login",
+        json={"username": payload["username"], "password": payload["password"]},
+    )
+    assert locked_res.status_code == 423
+
+    # 3. Administrador consulta o status de segurança e desbloqueia a conta
+    sec_res = client.get(f"/user/{user_id}/security", headers=auth_headers)
+    assert sec_res.status_code == 200
+    assert sec_res.json()["is_locked"] is True
+    assert sec_res.json()["failed_attempts"] == 5
+
+    unlock_res = client.patch(f"/user/{user_id}/unlock", headers=auth_headers)
+    assert unlock_res.status_code == 204
+
+    # 4. Após desbloqueio, o login volta a funcionar e devolve access_token + refresh_token
+    login_res = client.post(
+        "/login",
+        json={"username": payload["username"], "password": payload["password"]},
+    )
+    assert login_res.status_code == 200
+    tokens = login_res.json()
+    old_refresh = tokens["refresh_token"]
+    assert old_refresh is not None
+
+    # 5. Rotação de sessão: usa o old_refresh para obter um novo par de tokens -> 200 OK
+    first_refresh = client.post("/login/refresh", json={"refresh_token": old_refresh})
+    assert first_refresh.status_code == 200
+    new_refresh = first_refresh.json()["refresh_token"]
+    assert new_refresh != old_refresh
+
+    # 6. Blacklist: tentar reutilizar o old_refresh já usado deve ser bloqueado -> 401 Unauthorized
+    replay_res = client.post("/login/refresh", json={"refresh_token": old_refresh})
+    assert replay_res.status_code == 401
+
+    # 7. Logout: invalida também o new_refresh e impede uso futuro -> 204 depois 401
+    logout_res = client.post("/login/logout", json={"refresh_token": new_refresh})
+    assert logout_res.status_code == 204
+
+    after_logout_res = client.post("/login/refresh", json={"refresh_token": new_refresh})
+    assert after_logout_res.status_code == 401
+
+    # Limpeza do usuário de teste
+    assert client.delete(f"/user/{user_id}/hard", headers=auth_headers).status_code == 204

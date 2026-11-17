@@ -4,9 +4,11 @@ import logging
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.models.revoked_token import RevokedToken
 from app.models.user import User
 from app.repositories.user import UserRepository
 from app.schemas.auth import TokenResponse
@@ -71,12 +73,40 @@ class ServiceAuth:
         user = self.authenticate(username, password)
         return self._issue_tokens(user.id)
 
+    def _is_token_revoked(self, jti: str) -> bool:
+        stmt = select(RevokedToken.jti).where(RevokedToken.jti == jti)
+        return self.db.scalar(stmt) is not None
+
+    def _revoke_token(self, jti: str, user_id: UUID, expires_at: datetime) -> None:
+        self.db.add(RevokedToken(jti=jti, user_id=user_id, expires_at=expires_at))
+        self.db.flush()
+
     def refresh(self, refresh_token: str) -> TokenResponse:
-        user_id = decode_refresh_token(refresh_token)
+        user_id, jti, expires_at = decode_refresh_token(refresh_token)
+
+        if self._is_token_revoked(jti):
+            raise ServiceError(
+                "Refresh token has already been used or revoked", code="invalid_token"
+            )
+
         user = self.users.find_by_id(user_id)
         if user is None or not user.is_active:
             raise ServiceError("User inactive or not found", code="invalid_token")
+
+        # Invalida o refresh token antigo antes de emitir o novo
+        self._revoke_token(jti, user.id, expires_at)
         return self._issue_tokens(user.id)
+
+    def logout(self, refresh_token: str) -> None:
+        user_id, jti, expires_at = decode_refresh_token(refresh_token)
+        if not self._is_token_revoked(jti):
+            self._revoke_token(jti, user_id, expires_at)
+
+    def purge_expired_tokens(self) -> int:
+        """Remove tokens expirados da blacklist para manter a tabela enxuta."""
+        stmt = delete(RevokedToken).where(RevokedToken.expires_at < datetime.now(UTC))
+        result = self.db.execute(stmt)
+        return result.rowcount or 0
 
     @staticmethod
     def _issue_tokens(user_id: UUID) -> TokenResponse:
