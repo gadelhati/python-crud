@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Path, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import InvalidTokenError
 from sqlalchemy.orm import Session
@@ -66,3 +66,34 @@ def get_authenticated_user(
 
 
 AuthenticatedUser = Annotated[User, Depends(get_authenticated_user)]
+
+
+def _is_admin(user: User) -> bool:
+    return any(role.name == "admin" for role in user.roles)
+
+
+def require_admin(current_user: AuthenticatedUser) -> User:
+    """Allows access only to users with the 'admin' role."""
+    if not _is_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito a administradores.",
+        )
+    return current_user
+
+
+def require_self_or_admin(
+    user_id: Annotated[UUID, Path()],
+    current_user: AuthenticatedUser,
+) -> User:
+    """Allows access if the authenticated user owns the resource or is an admin."""
+    if current_user.id != user_id and not _is_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Você não tem permissão para modificar outro usuário.",
+        )
+    return current_user
+
+
+AdminUser = Annotated[User, Depends(require_admin)]
+SelfOrAdminUser = Annotated[User, Depends(require_self_or_admin)]

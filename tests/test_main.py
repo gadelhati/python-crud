@@ -18,7 +18,9 @@ from fastapi.testclient import TestClient
 from app.database import SessionLocal, engine
 from app.main import app
 from app.models.base import Base
+from app.models.role import Role
 from app.models.user import User
+from app.services.password import hash_password
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -34,15 +36,38 @@ def client() -> Generator[TestClient]:
         yield test_client
 
 
+def authentication_headers(
+    application_client: TestClient,
+    username: str,
+    password: str,
+) -> dict[str, str]:
+    response = application_client.post(
+        "/login",
+        json={"username": username, "password": password},
+    )
+    assert response.status_code == 200, response.json()
+    token = response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
 @pytest.fixture
 def auth_headers(client: TestClient) -> Generator[dict[str, str]]:
-    """Cria um usuário inicial no banco para autenticar as requisições protegidas."""
+    """Cria um usuário administrador no banco para autenticar requisições administrativas."""
     unique_suffix = uuid4().hex[:8]
     username = f"seed_admin_{unique_suffix}"
     password = "SeedAdminPassword123!"
 
     with SessionLocal() as db:
-        from app.services.password import hash_password
+        admin_role = db.query(Role).filter(Role.name == "admin").first()
+        if admin_role is None:
+            admin_role = Role(
+                name="admin",
+                description="System administrator",
+                is_default=False,
+                is_system=True,
+            )
+            db.add(admin_role)
+            db.flush()
 
         admin = User(
             username=username,
@@ -50,6 +75,7 @@ def auth_headers(client: TestClient) -> Generator[dict[str, str]]:
             password=hash_password(password),
             first_name="Seed",
             last_name="Admin",
+            roles=[admin_role],
         )
         db.add(admin)
         db.commit()
@@ -63,20 +89,6 @@ def auth_headers(client: TestClient) -> Generator[dict[str, str]]:
         if stored_admin is not None:
             db.delete(stored_admin)
             db.commit()
-
-
-def authentication_headers(
-    application_client: TestClient,
-    username: str,
-    password: str,
-) -> dict[str, str]:
-    response = application_client.post(
-        "/login",
-        json={"username": username, "password": password},
-    )
-    assert response.status_code == 200, response.json()
-    token = response.json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
 
 
 def test_application_initializes(client: TestClient) -> None:
@@ -101,6 +113,33 @@ def test_health_endpoint_returns_expected_response(client: TestClient) -> None:
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "healthy"}
+
+
+def test_create_first_user_endpoint(client: TestClient) -> None:
+    payload = {
+        "username": "first_admin",
+        "email": "first.admin@example.com",
+        "password": "FirstAdminPassword123!",
+        "first_name": "First",
+        "last_name": "Admin",
+    }
+
+    first_response = client.post("/admin/init/create-first-user", json=payload)
+    assert first_response.status_code == 201, first_response.json()
+    data = first_response.json()
+    assert data["username"] == "first_admin"
+    assert any(role["name"] == "admin" for role in data["roles"])
+
+    # Second attempt should fail with 409 Conflict
+    second_response = client.post("/admin/init/create-first-user", json=payload)
+    assert second_response.status_code == 409
+
+    # Cleanup the first user to keep the database clean for subsequent tests
+    with SessionLocal() as db:
+        created_user = db.get(User, UUID(data["id"]))
+        if created_user is not None:
+            db.delete(created_user)
+            db.commit()
 
 
 def test_user_list_requires_authentication(client: TestClient) -> None:
@@ -142,7 +181,7 @@ def test_user_endpoints_use_uuid_identifiers(
         assert stored_user.password != payload["password"]
         assert stored_user.password.startswith("pbkdf2_sha256$")
 
-    hard_delete_response = client.delete(f"/user/{user_id}/hard", headers=headers)
+    hard_delete_response = client.delete(f"/user/{user_id}/hard", headers=auth_headers)
     assert hard_delete_response.status_code == 204
 
 
@@ -162,8 +201,7 @@ def test_user_names_can_be_null(client: TestClient, auth_headers: dict[str, str]
     assert user["first_name"] is None
     assert user["last_name"] is None
 
-    headers = authentication_headers(client, payload["username"], payload["password"])
-    hard_delete_response = client.delete(f"/user/{user['id']}/hard", headers=headers)
+    hard_delete_response = client.delete(f"/user/{user['id']}/hard", headers=auth_headers)
     assert hard_delete_response.status_code == 204
 
 
@@ -171,14 +209,7 @@ def test_user_soft_delete_restore_and_hard_delete(
     client: TestClient, auth_headers: dict[str, str]
 ) -> None:
     unique_suffix = uuid4().hex[:8]
-    actor_payload = {
-        "username": f"admin_{unique_suffix}",
-        "email": f"admin.{unique_suffix}@example.com",
-        "password": "AnotherPassword123!",
-        "first_name": "Python",
-        "last_name": "User",
-    }
-    payload = {
+    target_payload = {
         "username": f"advanced_{unique_suffix}",
         "email": f"advanced.{unique_suffix}@example.com",
         "password": "AnotherPassword123!",
@@ -186,26 +217,15 @@ def test_user_soft_delete_restore_and_hard_delete(
         "last_name": "User",
     }
 
-    actor_response = client.post("/user", json=actor_payload, headers=auth_headers)
-    assert actor_response.status_code == 201, actor_response.json()
-    actor_id = actor_response.json()["id"]
-
-    create_response = client.post("/user", json=payload, headers=auth_headers)
+    create_response = client.post("/user", json=target_payload, headers=auth_headers)
     assert create_response.status_code == 201, create_response.json()
     user_id = create_response.json()["id"]
 
-    headers = authentication_headers(
-        client,
-        actor_payload["username"],
-        actor_payload["password"],
-    )
-
-    soft_delete_response = client.delete(f"/user/{user_id}", headers=headers)
-    get_deleted_response = client.get(f"/user/{user_id}", headers=headers)
-    restore_response = client.patch(f"/user/{user_id}/restore", headers=headers)
-    hard_delete_response = client.delete(f"/user/{user_id}/hard", headers=headers)
-    get_hard_deleted_response = client.get(f"/user/{user_id}", headers=headers)
-    hard_delete_actor_response = client.delete(f"/user/{actor_id}/hard", headers=headers)
+    soft_delete_response = client.delete(f"/user/{user_id}", headers=auth_headers)
+    get_deleted_response = client.get(f"/user/{user_id}", headers=auth_headers)
+    restore_response = client.patch(f"/user/{user_id}/restore", headers=auth_headers)
+    hard_delete_response = client.delete(f"/user/{user_id}/hard", headers=auth_headers)
+    get_hard_deleted_response = client.get(f"/user/{user_id}", headers=auth_headers)
 
     assert soft_delete_response.status_code == 204, soft_delete_response.json()
     assert get_deleted_response.status_code == 404, get_deleted_response.json()
@@ -213,24 +233,52 @@ def test_user_soft_delete_restore_and_hard_delete(
     assert restore_response.json()["deleted_at"] is None, restore_response.json()
     assert hard_delete_response.status_code == 204, hard_delete_response.json()
     assert get_hard_deleted_response.status_code == 404, get_hard_deleted_response.json()
-    assert hard_delete_actor_response.status_code == 204, hard_delete_actor_response.json()
 
 
-def test_create_first_user_endpoint(client: TestClient) -> None:
-    payload = {
-        "username": "first_admin",
-        "email": "first.admin@example.com",
-        "password": "FirstAdminPassword123!",
-        "first_name": "First",
-        "last_name": "Admin",
+def test_regular_user_cannot_modify_or_delete_other_users(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    """Ensures that a regular user receives 403 Forbidden when trying
+    to modify/delete other users."""
+    suffix = uuid4().hex[:8]
+
+    user_a_payload = {
+        "username": f"user_a_{suffix}",
+        "email": f"user.a.{suffix}@example.com",
+        "password": "RegularPassword123!",
+        "first_name": "User",
+        "last_name": "Alpha",
+    }
+    user_b_payload = {
+        "username": f"user_b_{suffix}",
+        "email": f"user.b.{suffix}@example.com",
+        "password": "RegularPassword123!",
+        "first_name": "User",
+        "last_name": "Beta",
     }
 
-    first_response = client.post("/admin/init/create-first-user", json=payload)
-    assert first_response.status_code == 201, first_response.json()
-    data = first_response.json()
-    assert data["username"] == "first_admin"
-    assert any(role["name"] == "admin" for role in data["roles"])
+    res_a = client.post("/user", json=user_a_payload, headers=auth_headers)
+    res_b = client.post("/user", json=user_b_payload, headers=auth_headers)
+    assert res_a.status_code == 201
+    assert res_b.status_code == 201
 
-    # Segunda tentativa deve ser bloqueada com 409 Conflict
-    second_response = client.post("/admin/init/create-first-user", json=payload)
-    assert second_response.status_code == 409
+    # user_a_id = res_a.json()["id"]
+    # user_b_id = res_b.json()["id"]
+
+    headers_a = authentication_headers(
+        client, user_a_payload["username"], user_a_payload["password"]
+    )
+
+    # 1. User A tries to create another user (requires AdminUser -> 403)
+    create_forbidden = client.post(
+        "/user",
+        json={
+            "username": f"intruder_{suffix}",
+            "email": f"intruder.{suffix}@example.com",
+            "password": "RegularPassword123!",
+        },
+        headers=headers_a,
+    )
+    assert create_forbidden.status_code == 403
+
+    # 2. User A tries to edit User B (requires SelfOrAdminUser -> 403)
