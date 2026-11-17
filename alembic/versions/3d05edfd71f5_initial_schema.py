@@ -1,8 +1,8 @@
 """initial schema
 
-Revision ID: 3b47a486c94d
+Revision ID: 3d05edfd71f5
 Revises:
-Create Date: 2026-11-17 13:49:28.927607
+Create Date: 2026-11-17 15:38:12.195536
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "3b47a486c94d"
+revision: str = "3d05edfd71f5"
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -70,10 +70,10 @@ def upgrade() -> None:
             ["created_by"], ["users.id"], name="fk_permissions_created_by", use_alter=True
         ),
         sa.ForeignKeyConstraint(
-            ["deleted_by"], ["users.id"], name="fk_permissions_created_by", use_alter=True
+            ["deleted_by"], ["users.id"], name="fk_permissions_deleted_by", use_alter=True
         ),
         sa.ForeignKeyConstraint(
-            ["updated_by"], ["users.id"], name="fk_permissions_created_by", use_alter=True
+            ["updated_by"], ["users.id"], name="fk_permissions_updated_by", use_alter=True
         ),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -123,10 +123,10 @@ def upgrade() -> None:
             ["created_by"], ["users.id"], name="fk_roles_created_by", use_alter=True
         ),
         sa.ForeignKeyConstraint(
-            ["deleted_by"], ["users.id"], name="fk_roles_created_by", use_alter=True
+            ["deleted_by"], ["users.id"], name="fk_roles_deleted_by", use_alter=True
         ),
         sa.ForeignKeyConstraint(
-            ["updated_by"], ["users.id"], name="fk_roles_created_by", use_alter=True
+            ["updated_by"], ["users.id"], name="fk_roles_updated_by", use_alter=True
         ),
         sa.PrimaryKeyConstraint("id"),
     )
@@ -169,10 +169,10 @@ def upgrade() -> None:
             ["created_by"], ["users.id"], name="fk_users_created_by", use_alter=True
         ),
         sa.ForeignKeyConstraint(
-            ["deleted_by"], ["users.id"], name="fk_users_created_by", use_alter=True
+            ["deleted_by"], ["users.id"], name="fk_users_deleted_by", use_alter=True
         ),
         sa.ForeignKeyConstraint(
-            ["updated_by"], ["users.id"], name="fk_users_created_by", use_alter=True
+            ["updated_by"], ["users.id"], name="fk_users_updated_by", use_alter=True
         ),
         sa.PrimaryKeyConstraint("id"),
     )
