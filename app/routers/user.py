@@ -1,9 +1,17 @@
 # app/routers/user.py - Router for handling user-related endpoints
+from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.dependencies import AdminUser, AuthenticatedUser, DbSession, SelfOrAdminUser
+from app.dependencies import (
+    AdminUser,
+    DbSession,
+    require_permission,
+    require_self_or_permission,
+)
+from app.enum.permission_action import EnumPermissionAction
+from app.models.user import User
 from app.schemas.user import UserRequest, UserRequestWithoutPassword, UserResponse
 from app.services.user import ServiceUser
 
@@ -11,13 +19,17 @@ user = APIRouter(prefix="/user", tags=["User"])
 
 
 @user.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create(request: UserRequest, db: DbSession, current_user: AdminUser):
+def create(
+    request: UserRequest,
+    db: DbSession,
+    current_user: Annotated[User, Depends(require_permission(EnumPermissionAction.CREATE_USER))],
+):
     return ServiceUser(db).create(request, current_user_id=current_user.id)
 
 
 @user.get("", response_model=list[UserResponse])
 def find_all(
-    _: AuthenticatedUser,
+    _: Annotated[User, Depends(require_permission(EnumPermissionAction.READ_USER))],
     db: DbSession,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
@@ -26,7 +38,11 @@ def find_all(
 
 
 @user.get("/{user_id}", response_model=UserResponse)
-def find_by_id(user_id: UUID, _: AuthenticatedUser, db: DbSession):
+def find_by_id(
+    user_id: UUID,
+    _: Annotated[User, Depends(require_self_or_permission(EnumPermissionAction.READ_USER))],
+    db: DbSession,
+):
     return ServiceUser(db).get(user_id)
 
 
@@ -34,14 +50,20 @@ def find_by_id(user_id: UUID, _: AuthenticatedUser, db: DbSession):
 def update(
     user_id: UUID,
     request: UserRequestWithoutPassword,
-    current_user: SelfOrAdminUser,
+    current_user: AdminUser,
     db: DbSession,
 ):
-    return ServiceUser(db).update(user_id, request, current_user_id=current_user.id)
+    return ServiceUser(db).update(user_id, request, current_user_id=current_user)
 
 
 @user.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_by_id(user_id: UUID, current_user: SelfOrAdminUser, db: DbSession):
+def delete_by_id(
+    user_id: UUID,
+    current_user: Annotated[
+        User, Depends(require_self_or_permission(EnumPermissionAction.DELETE_USER))
+    ],
+    db: DbSession,
+):
     ServiceUser(db).soft_delete(user_id, current_user_id=current_user.id)
 
 

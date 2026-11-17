@@ -1,5 +1,6 @@
 # app/dependencies.py - Dependency injection setup for FastAPI,
 # including user repository and authentication dependencies
+from collections.abc import Callable
 from typing import Annotated
 from uuid import UUID
 
@@ -9,6 +10,7 @@ from jwt import InvalidTokenError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.enum.permission_action import EnumPermissionAction
 from app.models.user import User
 from app.repositories.user import UserRepository
 from app.services.token import decode_access_token
@@ -72,6 +74,16 @@ def _is_admin(user: User) -> bool:
     return any(role.name == "admin" for role in user.roles)
 
 
+def _has_permission(user: User, required_action: EnumPermissionAction) -> bool:
+    if _is_admin(user):
+        return True
+    return any(
+        permission.action == required_action
+        for role in user.roles
+        for permission in role.permissions
+    )
+
+
 def require_admin(current_user: AuthenticatedUser) -> User:
     """Allows access only to users with the 'admin' role."""
     if not _is_admin(current_user):
@@ -95,5 +107,43 @@ def require_self_or_admin(
     return current_user
 
 
-AdminUser = Annotated[User, Depends(require_admin)]
 SelfOrAdminUser = Annotated[User, Depends(require_self_or_admin)]
+
+
+def require_permission(required_action: EnumPermissionAction) -> Callable[[User], User]:
+    """Fábrica de dependência que valida se o usuário possui a permissão exigida."""
+
+    def dependency(current_user: AuthenticatedUser) -> User:
+        if not _has_permission(current_user, required_action):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permissão necessária: {required_action.value}",
+            )
+        return current_user
+
+    return dependency
+
+
+def require_self_or_permission(
+    required_action: EnumPermissionAction,
+) -> Callable[[UUID, User], User]:
+    """Permite acesso ao próprio dono do recurso OU a quem tiver a permissão exigida."""
+
+    def dependency(
+        user_id: Annotated[UUID, Path()],
+        current_user: AuthenticatedUser,
+    ) -> User:
+        if current_user.id != user_id and not _has_permission(current_user, required_action):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "Access denied. Requires resource ownership or permission: "
+                    f"{required_action.value}"
+                ),
+            )
+        return current_user
+
+    return dependency
+
+
+AdminUser = Annotated[User, Depends(require_admin)]
