@@ -37,7 +37,7 @@ class TimestampMixin:
     def updated_by(cls) -> Mapped[UUID | None]:
         return mapped_column(
             Uuid(as_uuid=True),
-            ForeignKey("users.id", name=f"fk_{cls.__tablename__}_created_by", use_alter=True),
+            ForeignKey("users.id", name=f"fk_{cls.__tablename__}_updated_by", use_alter=True),
             nullable=True,
         )
 
@@ -45,7 +45,7 @@ class TimestampMixin:
     def deleted_by(cls) -> Mapped[UUID | None]:
         return mapped_column(
             Uuid(as_uuid=True),
-            ForeignKey("users.id", name=f"fk_{cls.__tablename__}_created_by", use_alter=True),
+            ForeignKey("users.id", name=f"fk_{cls.__tablename__}_deleted_by", use_alter=True),
             nullable=True,
         )
 

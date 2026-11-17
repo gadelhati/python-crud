@@ -31,10 +31,67 @@ jobs:
         run: python -m ruff format --check .
 
       - name: Validate environment
+        env:
+          UVICORN_JWT_SECRET_KEY: replace-with-a-secure-secret-of-at-least-32-characters
         run: python -c "import os; v=os.getenv('UVICORN_JWT_SECRET_KEY', ''); print(f'JWT length={len(v)}, valid={len(v) >= 32}, scientific={\"E+\" in v.upper()}')"
-        
-      - name: Run tests
+
+      - name: Run Alembic migrations (SQLite)
         env:
           UVICORN_JWT_SECRET_KEY: replace-with-a-secure-secret-of-at-least-32-characters
           UVICORN_DATABASE_URL: sqlite:///db.sqlite3
+        run: |
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
+
+      - name: Run tests (SQLite)
+        env:
+          UVICORN_JWT_SECRET_KEY: replace-with-a-secure-secret-of-at-least-32-characters
+          UVICORN_DATABASE_URL: sqlite:///db.sqlite3
+        run: python -m pytest -v
+
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]" psycopg[binary]
+
+      - name: Run Alembic migrations (PostgreSQL)
+        env:
+          UVICORN_JWT_SECRET_KEY: replace-with-a-secure-secret-of-at-least-32-characters
+          UVICORN_DATABASE_URL: postgresql+psycopg://app:app@localhost:5432/app_test
+        run: |
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
+
+      - name: Run tests (PostgreSQL)
+        env:
+          UVICORN_JWT_SECRET_KEY: replace-with-a-secure-secret-of-at-least-32-characters
+          UVICORN_DATABASE_URL: postgresql+psycopg://app:app@localhost:5432/app_test
         run: python -m pytest -v
