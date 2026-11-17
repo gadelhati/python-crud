@@ -49,7 +49,7 @@ class RoleRequest(RoleBase):
         if v is None:
             return v
 
-        if len(v) != len(set(v)) != len(set(v)):
+        if len(v) != len(set(v)):
             raise ValueError("Duplicate permissions not allowed")
 
         return v
