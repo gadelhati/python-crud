@@ -57,3 +57,7 @@ select = [
 "app/models/base.py" = [
     "N805",     # 
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
