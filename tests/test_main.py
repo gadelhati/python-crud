@@ -417,3 +417,48 @@ def test_login_lockout_unlock_and_refresh_token_blacklist(
 
     # Limpeza do usuário de teste
     assert client.delete(f"/user/{user_id}/hard", headers=auth_headers).status_code == 204
+
+
+def test_admin_can_update_other_user_and_record_audit_trail(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
+    """Garante que o admin atualize terceiros e preencha updated_by com seu próprio UUID."""
+    suffix = uuid4().hex[:8]
+    target_payload = {
+        "username": f"target_user_{suffix}",
+        "email": f"target.{suffix}@example.com",
+        "password": "TargetPassword123!",
+        "first_name": "Before",
+        "last_name": "Update",
+    }
+
+    create_res = client.post("/user", json=target_payload, headers=auth_headers)
+    assert create_res.status_code == 201, create_res.json()
+    target_data = create_res.json()
+    target_id = target_data["id"]
+    admin_id = target_data["created_by"]
+    assert admin_id is not None
+
+    update_payload = {
+        "username": target_payload["username"],
+        "email": target_payload["email"],
+        "first_name": "After",
+        "last_name": "AdminEdit",
+    }
+    update_res = client.put(f"/user/{target_id}", json=update_payload, headers=auth_headers)
+    assert update_res.status_code == 200, update_res.json()
+
+    updated_data = update_res.json()
+    assert updated_data["first_name"] == "After"
+    assert updated_data["last_name"] == "AdminEdit"
+    assert updated_data["updated_by"] == admin_id
+    assert updated_data["version_id"] == 2
+
+    # Confirma diretamente no banco de dados
+    with SessionLocal() as db:
+        stored_user = db.get(User, UUID(target_id))
+        assert stored_user is not None
+        assert str(stored_user.updated_by) == admin_id
+
+    # Limpeza
+    assert client.delete(f"/user/{target_id}/hard", headers=auth_headers).status_code == 204

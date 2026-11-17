@@ -53,7 +53,7 @@ def update(
     current_user: AdminUser,
     db: DbSession,
 ):
-    return ServiceUser(db).update(user_id, request, current_user_id=current_user)
+    return ServiceUser(db).update(user_id, request, current_user_id=current_user.id)
 
 
 @user.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

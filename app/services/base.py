@@ -58,6 +58,10 @@ class ServiceBase[
     @staticmethod
     def _stamp(entity: EntityBase, user_id: UUID | None, *, created: bool = False) -> None:
         """Fills audit fields on the entity."""
+        if user_id is not None and not isinstance(user_id, UUID):
+            raise TypeError(
+                f"Expected UUID or None for audit user_id, got {type(user_id).__name__}"
+            )
         if created:
             entity.created_by = user_id
         else:
