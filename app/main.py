@@ -1,5 +1,7 @@
 # app/main.py - Main application entry point for FastAPI, including
 # router registration and application lifespan management
+import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -7,7 +9,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.database import engine
+from app.database import SessionLocal, engine
 from app.models.base import Base
 from app.routers.admin import admin
 from app.routers.auth import auth
@@ -16,6 +18,7 @@ from app.routers.permission import permission
 from app.routers.role import role
 from app.routers.user import user
 from app.services.base import ServiceError
+from app.services.permission import ServicePermission
 
 
 @asynccontextmanager
@@ -24,7 +27,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Python Template", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Python Template", lifespan=lifespan)
 app.include_router(admin)
 app.include_router(base)
 app.include_router(auth)
@@ -56,6 +59,27 @@ def service_error_handler(_: Request, exc: ServiceError) -> JSONResponse:
         content={"detail": exc.message, "code": exc.code},
         headers=headers,
     )
+
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
+    # Garante que as tabelas existem (opcional se você usa apenas Alembic)
+    Base.metadata.create_all(bind=engine)
+
+    with SessionLocal() as db:
+        try:
+            ServicePermission(db).sync_with_enum()
+            db.commit()
+            logger.info("Permissions synchronized with EnumPermissionAction.")
+        except Exception:
+            db.rollback()
+            logger.exception("Failed to synchronize permissions on startup.")
+            raise
+
+    yield
 
 
 if __name__ == "__main__":
