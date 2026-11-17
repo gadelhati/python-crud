@@ -14,7 +14,9 @@ class RevokedToken(Base):
 
     jti: Mapped[str] = mapped_column(String(36), primary_key=True)
     user_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False, index=True)
-    expires_at: Mapped[datetime] = mapped_column(DateTime(UTC), nullable=False, index=True)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
     revoked_at: Mapped[datetime] = mapped_column(
-        DateTime(UTC), default=lambda: datetime.now(UTC), nullable=False
+        DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False
     )

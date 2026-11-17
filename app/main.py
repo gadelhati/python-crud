@@ -9,26 +9,26 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from app.config import settings
-from app.database import SessionLocal, engine
-from app.models.base import Base
+from app.database import SessionLocal
 from app.routers.admin import admin
 from app.routers.auth import auth
 from app.routers.base import base
 from app.routers.permission import permission
 from app.routers.role import role
 from app.routers.user import user
+from app.services.auth import ServiceAuth
 from app.services.base import ServiceError
 from app.services.permission import ServicePermission
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
-    # Garante que as tabelas existem (opcional se você usa apenas Alembic)
-    Base.metadata.create_all(bind=engine)
+    # Tables are now created via: alembic upgrade head
 
     with SessionLocal() as db:
         try:
             ServicePermission(db).sync_with_enum()
+            ServiceAuth(db).purge_expired_tokens()
             db.commit()
             logger.info("Permissions synchronized with EnumPermissionAction.")
         except Exception:

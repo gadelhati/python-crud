@@ -1,6 +1,5 @@
 # app/join.py - Association tables for many-to-many relationships
 # between users, roles, and permissions
-from datetime import UTC
 
 from sqlalchemy import Column, DateTime, ForeignKey, Table, func
 from sqlalchemy.dialects.postgresql import UUID
@@ -16,7 +15,7 @@ user_roles = Table(
     Column(
         "role_id", UUID(as_uuid=True), ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
     ),
-    Column("created_at", DateTime(UTC), server_default=func.now()),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )
 
 role_permissions = Table(
@@ -31,5 +30,5 @@ role_permissions = Table(
         ForeignKey("permissions.id", ondelete="CASCADE"),
         primary_key=True,
     ),
-    Column("created_at", DateTime(UTC), server_default=func.now()),
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
 )

@@ -1,5 +1,5 @@
 # app/models/base.py - Base classes and mixins for ORM models
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, ForeignKey, Integer, Uuid, func
@@ -19,11 +19,11 @@ class IdMixin:
 class TimestampMixin:
     """Mixin providing created_at and updated_at timestamps."""
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(UTC), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(UTC), server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
-    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(UTC))
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     @declared_attr
     def created_by(cls) -> Mapped[UUID | None]:

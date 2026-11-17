@@ -1,6 +1,6 @@
 # app/models/user.py - User model representing system
 # users and their attributes
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, Integer, String, text
@@ -34,7 +34,7 @@ class User(EntityBase):
         Boolean, default=False, server_default=text("false"), doc="Whether user email is verified"
     )
     last_login: Mapped[datetime | None] = mapped_column(
-        DateTime(UTC), doc="Last successful login timestamp"
+        DateTime(timezone=True), doc="Last successful login timestamp"
     )
     failed_login_attempts: Mapped[int] = mapped_column(
         Integer,
@@ -43,7 +43,7 @@ class User(EntityBase):
         doc="Count of consecutive failed login attempts",
     )
     locked_until: Mapped[datetime | None] = mapped_column(
-        DateTime(UTC), doc="Account lock expiration timestamp"
+        DateTime(timezone=True), doc="Account lock expiration timestamp"
     )
 
     """Relationships"""
