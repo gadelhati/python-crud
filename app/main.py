@@ -12,6 +12,8 @@ from app.models.base import Base
 from app.routers.admin import admin
 from app.routers.auth import auth
 from app.routers.base import base
+from app.routers.permission import permission
+from app.routers.role import role
 from app.routers.user import user
 from app.services.base import ServiceError
 
@@ -27,6 +29,8 @@ app.include_router(admin)
 app.include_router(base)
 app.include_router(auth)
 app.include_router(user)
+app.include_router(role)
+app.include_router(permission)
 
 STATUS_BY_ERROR_CODE: dict[str, int] = {
     "not_found": status.HTTP_404_NOT_FOUND,

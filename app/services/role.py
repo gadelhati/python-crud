@@ -1,5 +1,4 @@
-# app/services/role.py - Service for handling role-related business
-# logic, including permission management
+# app/services/role.py - Service for handling role-related business logic
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -7,18 +6,18 @@ from sqlalchemy.orm import Session
 from app.models.role import Role
 from app.repositories.permission import PermissionRepository
 from app.repositories.role import RoleRepository
-from app.schemas.role import DTORoleCreate, DTORoleRetrieve, DTORoleUpdate
+from app.schemas.role import RoleRequest, RoleResponse
 from app.services.base import ServiceBase, ServiceError
 from app.validations.role import RoleValidation
 
 
-class ServiceRole(ServiceBase[Role, DTORoleCreate, DTORoleUpdate, DTORoleRetrieve]):
+class ServiceRole(ServiceBase[Role, RoleRequest, RoleRequest, RoleResponse]):
     """Role service with role-specific rules."""
 
     def __init__(self, db: Session) -> None:
         self.roles = RoleRepository(db)
         self.permissions = PermissionRepository(db)
-        super().__init__(db, self.roles, DTORoleRetrieve)
+        super().__init__(db, self.roles, RoleResponse)
 
     def _resolve_permissions(self, permission_ids: list[UUID]) -> list:
         self._validate_ids(permission_ids, RoleValidation.MAX_PERMISSIONS_PER_ROLE, "permissions")
@@ -26,7 +25,7 @@ class ServiceRole(ServiceBase[Role, DTORoleCreate, DTORoleUpdate, DTORoleRetriev
         self._check_found(permissions, permission_ids, "permissions")
         return list(permissions)
 
-    def create(self, dto: DTORoleCreate, current_user_id: UUID | None = None) -> DTORoleRetrieve:
+    def create(self, dto: RoleRequest, current_user_id: UUID | None = None) -> RoleResponse:
         if self.roles.find_by_name(dto.name, include_deleted=True) is not None:
             raise ServiceError(f"Role with name '{dto.name}' already exists", code="conflict")
 
@@ -41,8 +40,8 @@ class ServiceRole(ServiceBase[Role, DTORoleCreate, DTORoleUpdate, DTORoleRetriev
         return self._to_dto(role)
 
     def update(
-        self, id: UUID, dto: DTORoleUpdate, current_user_id: UUID | None = None
-    ) -> DTORoleRetrieve:
+        self, id: UUID, dto: RoleRequest, current_user_id: UUID | None = None
+    ) -> RoleResponse:
         role = self._get_or_404(id)
         data = dto.model_dump(exclude_unset=True, exclude={"permission_ids"})
 
@@ -77,12 +76,12 @@ class ServiceRole(ServiceBase[Role, DTORoleCreate, DTORoleUpdate, DTORoleRetriev
             raise ServiceError("System roles cannot be deleted", code="invalid_operation")
         return super().soft_delete(id, current_user_id)
 
-    def get_default_roles(self, include_deleted: bool = False) -> list[DTORoleRetrieve]:
+    def get_default_roles(self, include_deleted: bool = False) -> list[RoleResponse]:
         return [self._to_dto(r) for r in self.roles.find_defaults(include_deleted=include_deleted)]
 
     def update_permissions(
         self, role_id: UUID, permission_ids: list[UUID], current_user_id: UUID | None = None
-    ) -> DTORoleRetrieve:
+    ) -> RoleResponse:
         role = self._get_or_404(role_id)
         role.permissions = self._resolve_permissions(permission_ids)
         self._stamp(role, current_user_id)
