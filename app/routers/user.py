@@ -80,3 +80,13 @@ def hard_delete_by_id(user_id: UUID, current_user: AdminUser, db: DbSession):
 @user.patch("/{user_id}/restore", response_model=UserResponse)
 def restore_by_id(user_id: UUID, current_user: AdminUser, db: DbSession):
     return ServiceUser(db).restore(user_id, current_user_id=current_user.id)
+
+
+@user.get("/{user_id}/security")
+def get_security_status(user_id: UUID, _: AdminUser, db: DbSession):
+    return ServiceUser(db).get_security_status(user_id)
+
+
+@user.patch("/{user_id}/unlock", status_code=status.HTTP_204_NO_CONTENT)
+def unlock_account(user_id: UUID, current_user: AdminUser, db: DbSession):
+    ServiceUser(db).unlock_account(user_id, current_user_id=current_user.id)

@@ -34,8 +34,15 @@ class TokenResponse(SchemaBase):
     """Schema for authentication token responses."""
 
     access_token: str
+    refresh_token: str | None = None
     token_type: str = "bearer"
     expires_in: int = Field(ge=0)
+
+
+class RefreshTokenRequest(SchemaBase):
+    """Schema for refreshing an expired access token."""
+
+    refresh_token: str = Field(min_length=1)
 
 
 class PasswordResetRequest(SchemaBase):
