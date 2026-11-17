@@ -6,15 +6,15 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.models.user import User
 from app.repositories.user import UserRepository
-from app.schemas.user import UserResponse
+from app.schemas.auth import TokenResponse
 from app.services.base import ServiceError
 from app.services.password import verify_password
 from app.services.token import (
     create_access_token,
     create_refresh_token,
-    decode_access_token,
     decode_refresh_token,
 )
 
@@ -34,17 +34,22 @@ class ServiceAuth:
     def authenticate(self, username: str, password: str) -> User:
         """Validates credentials and manages lockout. Do NOT expose directly in the API."""
         invalid = ServiceError("Incorrect username or password", code="invalid_credentials")
-        user = self.users.find_by_username(username)
+        user = self.users.find_by_username_or_email(username)
         if user is None or not user.is_active:
             logger.warning("Failed login for %s", username)
             raise invalid
 
         now = datetime.now(UTC)
         if user.locked_until is not None:
-            if user.locked_until > now:
+            locked_until = (
+                user.locked_until
+                if user.locked_until.tzinfo is not None
+                else user.locked_until.replace(tzinfo=UTC)
+            )
+            if locked_until > now:
                 logger.warning("Login attempt on locked account: %s", username)
                 raise ServiceError("Account temporarily locked", code="account_locked")
-            user.locked_until = None  # lock expired
+            user.locked_until = None
             user.failed_login_attempts = 0
 
         if not verify_password(password, user.password):
@@ -52,31 +57,31 @@ class ServiceAuth:
             if user.failed_login_attempts >= self.MAX_FAILED_ATTEMPTS:
                 user.locked_until = now + self.LOCKOUT_DURATION
                 logger.warning("Account locked for excessive attempts: %s", username)
+            # Persiste o incremento/bloqueio antes de lançar a exceção (evita rollback no get_db)
+            self.db.commit()
             raise invalid
 
         user.failed_login_attempts = 0
         user.locked_until = None
         user.last_login = now
+        self.users.save(user)
         return user
 
-    def login(self, username: str, password: str) -> dict[str, str]:
+    def login(self, username: str, password: str) -> TokenResponse:
         user = self.authenticate(username, password)
-        return {
-            "access_token": create_access_token(user.id),
-            "refresh_token": create_refresh_token(user.id),
-            "token_type": "bearer",
-        }
+        return self._issue_tokens(user.id)
 
-    def refresh(self, refresh_token: str) -> dict[str, str]:
-        user = self._active_user(decode_refresh_token(refresh_token))
-        return {"access_token": create_access_token(user.id), "token_type": "bearer"}
-
-    def get_current_user(self, token: str) -> UserResponse:
-        user = self._active_user(decode_access_token(token))
-        return UserResponse.model_validate(user, from_attributes=True)
-
-    def _active_user(self, user_id: UUID) -> User:
+    def refresh(self, refresh_token: str) -> TokenResponse:
+        user_id = decode_refresh_token(refresh_token)
         user = self.users.find_by_id(user_id)
         if user is None or not user.is_active:
-            raise ServiceError("User not found", code="not_found")
-        return user
+            raise ServiceError("User inactive or not found", code="invalid_token")
+        return self._issue_tokens(user.id)
+
+    @staticmethod
+    def _issue_tokens(user_id: UUID) -> TokenResponse:
+        return TokenResponse(
+            access_token=create_access_token(user_id),
+            refresh_token=create_refresh_token(user_id),
+            expires_in=settings.jwt_access_token_expire_minutes * 60,
+        )

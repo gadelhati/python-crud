@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
 from app.repositories.user import UserRepository
-from app.services.auth import decode_access_token
+from app.services.token import decode_access_token
 
 DbSession = Annotated[Session, Depends(get_db)]
 

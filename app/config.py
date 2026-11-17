@@ -2,7 +2,7 @@
 # including server, JWT, and database settings
 from pathlib import Path
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -17,7 +17,15 @@ class Settings(BaseSettings):
     reload: bool = False
     jwt_secret_key: SecretStr = Field(min_length=32)
     jwt_access_token_expire_minutes: int = Field(default=30, gt=0)
+    jwt_refresh_secret_key: SecretStr | None = None
+    jwt_refresh_token_expire_minutes: int = 60 * 24 * 7
     database_url: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def set_default_refresh_secret(self) -> "Settings":
+        if self.jwt_refresh_secret_key is None:
+            self.jwt_refresh_secret_key = self.jwt_secret_key
+        return self
 
     model_config = SettingsConfigDict(
         env_file=".env",

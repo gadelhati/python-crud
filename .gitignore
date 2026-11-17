@@ -20,6 +20,8 @@ build/
 .pytest_cache/
 htmlcov/
 .coverage
+test.db
+*.sqlite3
 
 # Linter
 .ruff_cache/

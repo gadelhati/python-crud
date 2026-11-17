@@ -1,72 +1,55 @@
 # app/routers/user.py - Router for handling user-related endpoints
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Query, status
 
-from app.dependencies import AuthenticatedUser, CurrentUser, DbSession, UserRepo
-from app.models.user import User
+from app.dependencies import AuthenticatedUser, DbSession
 from app.schemas.user import UserRequest, UserRequestWithoutPassword, UserResponse
-from app.services.password import hash_password
+from app.services.user import ServiceUser
 
 user = APIRouter(prefix="/user", tags=["User"])
 
 
 @user.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create(request: UserRequest, repo: UserRepo):
-    user = repo.save(
-        User(
-            username=request.username,
-            email=request.email,
-            password=hash_password(request.password),
-            first_name=request.first_name,
-            last_name=request.last_name,
-        )
-    )
-    return user
+def create(request: UserRequest, db: DbSession, current_user: AuthenticatedUser):
+    return ServiceUser(db).create(request, current_user_id=current_user.id)
 
 
 @user.get("", response_model=list[UserResponse])
 def find_all(
     _: AuthenticatedUser,
-    repo: UserRepo,
-    offset: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=500),
+    db: DbSession,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
 ):
-    return repo.find_all(offset=offset, limit=limit)
+    return ServiceUser(db).list(page=page, limit=limit)["items"]
 
 
 @user.get("/{user_id}", response_model=UserResponse)
-def find_by_id(_: AuthenticatedUser, user: CurrentUser):
-    return user
+def find_by_id(user_id: UUID, _: AuthenticatedUser, db: DbSession):
+    return ServiceUser(db).get(user_id)
 
 
 @user.put("/{user_id}", response_model=UserResponse)
 def update(
-    request: UserRequestWithoutPassword, _: AuthenticatedUser, user: CurrentUser, db: DbSession
+    user_id: UUID,
+    request: UserRequestWithoutPassword,
+    current_user: AuthenticatedUser,
+    db: DbSession,
 ):
-    user.username = request.username
-    user.email = request.email
-    user.password = hash_password(request.password)
-    user.first_name = request.first_name
-    user.last_name = request.last_name
-    return user
+    return ServiceUser(db).update(user_id, request, current_user_id=current_user.id)
 
 
 @user.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_by_id(user_id: UUID, _: AuthenticatedUser, repo: UserRepo, db: DbSession):
-    if not repo.soft_delete_by_id(user_id):
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User não encontrado")
+def delete_by_id(user_id: UUID, current_user: AuthenticatedUser, db: DbSession):
+    ServiceUser(db).soft_delete(user_id, current_user_id=current_user.id)
 
 
 @user.delete("/{user_id}/hard", status_code=status.HTTP_204_NO_CONTENT)
-def hard_delete_by_id(user_id: UUID, _: AuthenticatedUser, repo: UserRepo, db: DbSession):
-    if not repo.delete_by_id(user_id):
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "User não encontrado")
+def hard_delete_by_id(user_id: UUID, _: AuthenticatedUser, db: DbSession):
+    ServiceUser(db).delete(user_id)
 
 
 @user.patch("/{user_id}/restore", response_model=UserResponse)
-def restore_by_id(user_id: UUID, _: AuthenticatedUser, repo: UserRepo, db: DbSession):
-    user = repo.restore_by_id(user_id)
-    if user is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Usuário não encontrado ou não excluído")
-    return user
+def restore_by_id(user_id: UUID, current_user: AuthenticatedUser, db: DbSession):
+    return ServiceUser(db).restore(user_id, current_user_id=current_user.id)
