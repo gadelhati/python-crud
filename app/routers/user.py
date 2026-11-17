@@ -50,7 +50,9 @@ def find_by_id(
 def update(
     user_id: UUID,
     request: UserRequestWithoutPassword,
-    current_user: AdminUser,
+    current_user: Annotated[
+        User, Depends(require_self_or_permission(EnumPermissionAction.UPDATE_USER))
+    ],
     db: DbSession,
 ):
     return ServiceUser(db).update(user_id, request, current_user_id=current_user.id)
