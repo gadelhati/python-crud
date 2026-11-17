@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from app.config import settings
 from app.database import engine
 from app.models.base import Base
+from app.routers.admin import admin
 from app.routers.auth import auth
 from app.routers.base import base
 from app.routers.user import user
@@ -22,6 +23,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Python Template", version="1.0.0", lifespan=lifespan)
+app.include_router(admin)
 app.include_router(base)
 app.include_router(auth)
 app.include_router(user)

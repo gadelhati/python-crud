@@ -214,3 +214,23 @@ def test_user_soft_delete_restore_and_hard_delete(
     assert hard_delete_response.status_code == 204, hard_delete_response.json()
     assert get_hard_deleted_response.status_code == 404, get_hard_deleted_response.json()
     assert hard_delete_actor_response.status_code == 204, hard_delete_actor_response.json()
+
+
+def test_create_first_user_endpoint(client: TestClient) -> None:
+    payload = {
+        "username": "first_admin",
+        "email": "first.admin@example.com",
+        "password": "FirstAdminPassword123!",
+        "first_name": "First",
+        "last_name": "Admin",
+    }
+
+    first_response = client.post("/admin/init/create-first-user", json=payload)
+    assert first_response.status_code == 201, first_response.json()
+    data = first_response.json()
+    assert data["username"] == "first_admin"
+    assert any(role["name"] == "admin" for role in data["roles"])
+
+    # Segunda tentativa deve ser bloqueada com 409 Conflict
+    second_response = client.post("/admin/init/create-first-user", json=payload)
+    assert second_response.status_code == 409
