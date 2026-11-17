@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "python-template"
+name = "python-crud"
 version = "1.0.0"
 description = "Reusable Python application template built with FastAPI"
 requires-python = ">=3.13,<3.16"

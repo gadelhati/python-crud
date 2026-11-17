@@ -1,4 +1,4 @@
-# Contributing to python-template
+# Contributing to python-crud
 
 Thank you for contributing to this FastAPI template. This guide describes the local setup, quality checks, and pull request expectations.
 

@@ -1,6 +1,6 @@
 
 ```directory
-python-template/
+python-crud/
 │
 ├── .github/
 │   └── workflows/

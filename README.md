@@ -2,12 +2,12 @@
 
 # _Python Template_
 
-[![GitHub stars](https://img.shields.io/github/stars/forgepack/python-template?style=social)](https://github.com/forgepack/python-template)
-[![GitHub forks](https://img.shields.io/github/forks/forgepack/python-template?style=social)](https://github.com/forgepack/python-template/fork)
-[![GitHub watchers](https://img.shields.io/github/watchers/forgepack/python-template?style=social)](https://github.com/forgepack/python-template)
+[![GitHub stars](https://img.shields.io/github/stars/forgepack/python-crud?style=social)](https://github.com/forgepack/python-crud)
+[![GitHub forks](https://img.shields.io/github/forks/forgepack/python-crud?style=social)](https://github.com/forgepack/python-crud/fork)
+[![GitHub watchers](https://img.shields.io/github/watchers/forgepack/python-crud?style=social)](https://github.com/forgepack/python-crud)
 
-[![CI](https://github.com/forgepack/python-template/actions/workflows/ci.yml/badge.svg)](https://github.com/forgepack/python-template/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/forgepack/python-template/blob/main/LICENSE.md)
+[![CI](https://github.com/forgepack/python-crud/actions/workflows/ci.yml/badge.svg)](https://github.com/forgepack/python-crud/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/forgepack/python-crud/blob/main/LICENSE.md)
 
 </div>
 
@@ -74,13 +74,13 @@ python -m pip install -e ".[dev]"
 python -m build
 
 # inspect the contents of the wheel
-python -m zipfile -l dist/python_template-1.0.0-py3-none-any.whl
+python -m zipfile -l dist/python_crud-1.0.0-py3-none-any.whl
 
 # run application (*)
 python -m app.main
 
 # concat
-py -3.13 -m venv .venv; .venv\Scripts\Activate.ps1; python -m pip install --upgrade pip; python -m pip install -e ".[dev]"; python -m build; python -m zipfile -l dist/python_template-1.0.0-py3-none-any.whl; python -m app.main
+py -3.13 -m venv .venv; .venv\Scripts\Activate.ps1; python -m pip install --upgrade pip; python -m pip install -e ".[dev]"; python -m build; python -m zipfile -l dist/python_crud-1.0.0-py3-none-any.whl; python -m app.main
 ```
 
 ## Ruff linter formatting
@@ -128,9 +128,9 @@ This project is licensed under the __MIT License__ - see the [MIT LICENSE](https
 
 __⭐ Did you like the project? Leave a star! ⭐__
 
-[![GitHub stars](https://img.shields.io/github/stars/forgepack/python-template?style=social)](https://github.com/forgepack/python-template)
-[![GitHub forks](https://img.shields.io/github/forks/forgepack/python-template?style=social)](https://github.com/forgepack/python-template/fork)
-[![GitHub watchers](https://img.shields.io/github/watchers/forgepack/python-template?style=social)](https://github.com/forgepack/python-template)
+[![GitHub stars](https://img.shields.io/github/stars/forgepack/python-crud?style=social)](https://github.com/forgepack/python-crud)
+[![GitHub forks](https://img.shields.io/github/forks/forgepack/python-crud?style=social)](https://github.com/forgepack/python-crud/fork)
+[![GitHub watchers](https://img.shields.io/github/watchers/forgepack/python-crud?style=social)](https://github.com/forgepack/python-crud)
 
 __Made by [Forgepack](https://github.com/forgepack)__
 
