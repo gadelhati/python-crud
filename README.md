@@ -1,6 +1,6 @@
 <div align="center">
 
-# _Python Template_
+# _Python Crud_
 
 [![GitHub stars](https://img.shields.io/github/stars/forgepack/python-crud?style=social)](https://github.com/forgepack/python-crud)
 [![GitHub forks](https://img.shields.io/github/forks/forgepack/python-crud?style=social)](https://github.com/forgepack/python-crud/fork)

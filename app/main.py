@@ -27,7 +27,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Python Template", lifespan=lifespan)
+app = FastAPI(title="Python Crud", lifespan=lifespan)
 app.include_router(admin)
 app.include_router(base)
 app.include_router(auth)
