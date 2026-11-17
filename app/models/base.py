@@ -1,4 +1,4 @@
-# app/models/base.py
+# app/models/base.py - Base classes and mixins for ORM models
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 

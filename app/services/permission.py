@@ -1,3 +1,5 @@
+# app/services/permission.py - Service for handling permission-related
+# business logic (read-only)
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 

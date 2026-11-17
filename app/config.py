@@ -1,3 +1,5 @@
+# app/config.py - Application configuration settings,
+# including server, JWT, and database settings
 from pathlib import Path
 
 from pydantic import Field, SecretStr

@@ -1,3 +1,5 @@
+# app/services/role.py - Service for handling role-related business
+# logic, including permission management
 from uuid import UUID
 
 from sqlalchemy.orm import Session

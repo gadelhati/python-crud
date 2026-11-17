@@ -1,3 +1,5 @@
+# app/services/password.py - Service for handling password hashing and
+# verification using PBKDF2-HMAC-SHA256
 import base64
 import hashlib
 import hmac

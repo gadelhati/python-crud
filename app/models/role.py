@@ -1,4 +1,5 @@
-# app/models/role.py
+# app/models/role.py - Role model representing user
+# roles and their associated permissions
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, String, text

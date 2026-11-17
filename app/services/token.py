@@ -1,3 +1,5 @@
+# app/services/token.py - Service for handling JWT token creation and decoding
+# for access and refresh tokens
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 

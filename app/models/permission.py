@@ -1,4 +1,5 @@
-# app/models/permission.py
+# app/models/permission.py - Permission model representing
+# actions that can be assigned to roles
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum, String

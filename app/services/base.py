@@ -1,3 +1,5 @@
+# app/services/base.py - Generic service layer for CRUD operations
+# with audit and DTO conversion
 import logging
 from collections.abc import Sequence
 from math import ceil

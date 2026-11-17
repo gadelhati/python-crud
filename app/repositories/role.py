@@ -1,4 +1,5 @@
-# app/repository/base.py
+# app/repositories/role.py - Repository for managing Role
+# entities with support for soft deletion
 from sqlalchemy.orm import selectinload
 
 from app.models.role import Role

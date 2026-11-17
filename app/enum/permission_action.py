@@ -1,4 +1,4 @@
-# app/enum
+# app/enum - Enum for permission actions
 from enum import StrEnum
 
 

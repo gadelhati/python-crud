@@ -1,3 +1,5 @@
+# app/routers/auth.py - Router for handling authentication-related
+# endpoints
 from fastapi import APIRouter, HTTPException, status
 
 from app.config import settings

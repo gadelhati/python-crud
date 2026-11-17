@@ -1,4 +1,5 @@
-# app/main.py
+# app/main.py - Main application entry point for FastAPI, including
+# router registration and application lifespan management
 from contextlib import asynccontextmanager
 
 import uvicorn

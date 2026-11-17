@@ -1,4 +1,5 @@
-# app/repository/base.py
+# app/repositories/base.py - Base repository classes for CRUD
+# operations with support for soft deletion
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from uuid import UUID

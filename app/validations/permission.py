@@ -1,4 +1,5 @@
-# app/validation/permission.py
+# app/validations/permission.py - Centralized validation rules for
+# permission-related data
 
 
 class PermissionValidation:

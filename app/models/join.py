@@ -1,4 +1,5 @@
-# app/join.py
+# app/join.py - Association tables for many-to-many relationships
+# between users, roles, and permissions
 from datetime import UTC
 
 from sqlalchemy import Column, DateTime, ForeignKey, Table, func

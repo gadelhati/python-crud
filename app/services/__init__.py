@@ -1,1 +1,2 @@
-# directory containing the business rules
+# app/services - Directory containing the business rules and
+# service layer logic for the application

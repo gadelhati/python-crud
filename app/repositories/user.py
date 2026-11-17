@@ -1,4 +1,5 @@
-# app/repository/base.py
+# app/repositories/user.py - Repository for managing User
+# entities with support for soft deletion
 from sqlalchemy import or_
 from sqlalchemy.orm import selectinload
 

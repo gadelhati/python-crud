@@ -1,4 +1,5 @@
-# app/validation/role.py
+# app/validations/role.py - Centralized validation rules for
+# role-related data
 
 
 class RoleValidation:

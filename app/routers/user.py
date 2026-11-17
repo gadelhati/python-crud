@@ -1,4 +1,4 @@
-# app/routers/user.py
+# app/routers/user.py - Router for handling user-related endpoints
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status

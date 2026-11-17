@@ -1,4 +1,5 @@
-# app/validation/user.py
+# app/validations/user.py - Centralized validation rules for
+#  user-related data
 import re
 
 

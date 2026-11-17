@@ -1,1 +1,1 @@
-# directory containing the routes
+# app/routers - Directory containing the routes for the application

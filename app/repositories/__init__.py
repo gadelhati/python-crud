@@ -1,1 +1,2 @@
-# directory that handles persistence
+# app/repositories - Directory that handles persistence
+# and data access logic for the application

@@ -1,3 +1,5 @@
+# app/services/user.py - Service for handling user-related business logic,
+#  including role management, password updates, and security status
 import logging
 from datetime import UTC, datetime
 from typing import Any

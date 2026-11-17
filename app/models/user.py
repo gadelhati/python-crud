@@ -1,4 +1,5 @@
-# app/models/user.py
+# app/models/user.py - User model representing system
+# users and their attributes
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 

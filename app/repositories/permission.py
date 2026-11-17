@@ -1,4 +1,5 @@
-# app/repository/base.py
+# app/repositories/permission.py - Repository for managing Permission
+# entities with support for soft deletion
 from sqlalchemy import select
 
 from app.enum.permission_action import EnumPermissionAction

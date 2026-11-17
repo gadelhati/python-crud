@@ -1,4 +1,4 @@
-# directory containing the representation of the entities
+# app/models - Directory containing the representation of the entities
 from app.models.base import Base, EntityBase
 from app.models.permission import Permission
 from app.models.role import Role

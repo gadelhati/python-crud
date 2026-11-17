@@ -1,3 +1,5 @@
+# app/services/auth.py - Service for handling authentication,
+# login flow, lockout, and token issuance
 import logging
 from datetime import UTC, datetime, timedelta
 from uuid import UUID

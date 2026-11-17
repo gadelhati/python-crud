@@ -1,4 +1,5 @@
-# app/dependencies.py
+# app/dependencies.py - Dependency injection setup for FastAPI,
+# including user repository and authentication dependencies
 from typing import Annotated
 from uuid import UUID
 

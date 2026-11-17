@@ -1,4 +1,5 @@
-# app/routers/base.py
+# app/routers/base.py - Router for handling base endpoints like
+# health checks and root message
 from fastapi import APIRouter
 
 base = APIRouter(prefix="", tags=["Base"])

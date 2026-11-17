@@ -1,4 +1,5 @@
-# app/database.py
+# app/database.py - Database connection setup and session
+# management using SQLAlchemy
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
