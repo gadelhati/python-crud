@@ -5,8 +5,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Path, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jwt import InvalidTokenError
+from fastapi.security import HTTPBearer, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -15,7 +14,6 @@ from app.models.user import User
 from app.repositories.user import UserRepository
 from app.services.base import ServiceError
 from app.services.token import decode_access_token
-from fastapi.security import OAuth2PasswordBearer
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login", auto_error=False)
 DbSession = Annotated[Session, Depends(get_db)]
