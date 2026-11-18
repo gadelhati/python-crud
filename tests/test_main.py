@@ -42,6 +42,33 @@ def test_health_endpoint_returns_expected_response(client: TestClient) -> None:
     assert response.json() == {"status": "healthy"}
 
 
+def test_create_first_user_endpoint(client: TestClient) -> None:
+    payload = {
+        "username": "first_admin",
+        "email": "first.admin@example.com",
+        "password": "FirstAdminPassword123!",
+        "first_name": "First",
+        "last_name": "Admin",
+    }
+
+    first_response = client.post("/admin/init/create-first-user", json=payload)
+    assert first_response.status_code == 201, first_response.json()
+    data = first_response.json()
+    assert data["username"] == "first_admin"
+    assert any(role["name"] == "admin" for role in data["roles"])
+
+    # Second attempt should fail with 409 Conflict
+    second_response = client.post("/admin/init/create-first-user", json=payload)
+    assert second_response.status_code == 409
+
+    # Cleanup the first user to keep the database clean for subsequent tests
+    with SessionLocal() as db:
+        created_user = db.get(User, UUID(data["id"]))
+        if created_user is not None:
+            db.delete(created_user)
+            db.commit()
+
+
 def test_user_list_requires_authentication(client: TestClient) -> None:
     response = client.get("/user")
     assert response.status_code == 401

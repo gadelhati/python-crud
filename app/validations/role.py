@@ -14,12 +14,14 @@ class RoleValidation:
 
     MAX_PERMISSIONS_PER_ROLE = 50
 
-    @field_validator("name")
-    @classmethod
-    def validate_name(cls, v: str) -> str:
-        result = RoleValidation.validate_name(v, "Role name")
-        if result is None:
-            raise ValueError("Role name is required")
+    @staticmethod
+    def validate_name(v: str | None, field_name: str = "Role name") -> str | None:
+        """Normalize a role field and reject non-null blank values."""
+        if v is None:
+            return None
+        result = v.strip()
+        if not result:
+            raise ValueError(f"{field_name} is required")
         return result
 
     @field_validator("description")
