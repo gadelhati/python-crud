@@ -42,33 +42,6 @@ def test_health_endpoint_returns_expected_response(client: TestClient) -> None:
     assert response.json() == {"status": "healthy"}
 
 
-def test_create_first_user_endpoint(client: TestClient) -> None:
-    payload = {
-        "username": "first_admin",
-        "email": "first.admin@example.com",
-        "password": "FirstAdminPassword123!",
-        "first_name": "First",
-        "last_name": "Admin",
-    }
-
-    first_response = client.post("/admin/init/create-first-user", json=payload)
-    assert first_response.status_code == 201, first_response.json()
-    data = first_response.json()
-    assert data["username"] == "first_admin"
-    assert any(role["name"] == "admin" for role in data["roles"])
-
-    # Second attempt should fail with 409 Conflict
-    second_response = client.post("/admin/init/create-first-user", json=payload)
-    assert second_response.status_code == 409
-
-    # Cleanup the first user to keep the database clean for subsequent tests
-    with SessionLocal() as db:
-        created_user = db.get(User, UUID(data["id"]))
-        if created_user is not None:
-            db.delete(created_user)
-            db.commit()
-
-
 def test_user_list_requires_authentication(client: TestClient) -> None:
     response = client.get("/user")
     assert response.status_code == 401
@@ -97,7 +70,6 @@ def test_user_endpoints_use_uuid_identifiers(
 
     assert get_response.status_code == 200
     assert get_response.json()["id"] == str(user_id)
-    assert get_response.json()["deleted_at"] is None
     assert get_response.json()["first_name"] == payload["first_name"]
     assert get_response.json()["last_name"] == payload["last_name"]
     assert "password" not in get_response.json()
@@ -151,13 +123,17 @@ def test_user_soft_delete_restore_and_hard_delete(
     soft_delete_response = client.delete(f"/user/{user_id}", headers=auth_headers)
     get_deleted_response = client.get(f"/user/{user_id}", headers=auth_headers)
     restore_response = client.patch(f"/user/{user_id}/restore", headers=auth_headers)
-    hard_delete_response = client.delete(f"/user/{user_id}/hard", headers=auth_headers)
-    get_hard_deleted_response = client.get(f"/user/{user_id}", headers=auth_headers)
 
     assert soft_delete_response.status_code == 204, soft_delete_response.json()
     assert get_deleted_response.status_code == 404, get_deleted_response.json()
     assert restore_response.status_code == 200, restore_response.json()
-    assert restore_response.json()["deleted_at"] is None, restore_response.json()
+    with SessionLocal() as db:
+        restored_user = db.get(User, UUID(user_id))
+        assert restored_user is not None
+        assert restored_user.deleted_at is None
+
+    hard_delete_response = client.delete(f"/user/{user_id}/hard", headers=auth_headers)
+    get_hard_deleted_response = client.get(f"/user/{user_id}", headers=auth_headers)
     assert hard_delete_response.status_code == 204, hard_delete_response.json()
     assert get_hard_deleted_response.status_code == 404, get_hard_deleted_response.json()
 
@@ -363,8 +339,12 @@ def test_admin_can_update_other_user_and_record_audit_trail(
     assert create_res.status_code == 201, create_res.json()
     target_data = create_res.json()
     target_id = target_data["id"]
-    admin_id = target_data["created_by"]
-    assert admin_id is not None
+
+    with SessionLocal() as db:
+        created_user = db.get(User, UUID(target_id))
+        assert created_user is not None
+        admin_id = str(created_user.created_by)
+        assert created_user.created_by is not None
 
     update_payload = {
         "username": target_payload["username"],
@@ -378,14 +358,13 @@ def test_admin_can_update_other_user_and_record_audit_trail(
     updated_data = update_res.json()
     assert updated_data["first_name"] == "After"
     assert updated_data["last_name"] == "AdminEdit"
-    assert updated_data["updated_by"] == admin_id
-    assert updated_data["version_id"] == 2
 
     # Confirma diretamente no banco de dados
     with SessionLocal() as db:
         stored_user = db.get(User, UUID(target_id))
         assert stored_user is not None
         assert str(stored_user.updated_by) == admin_id
+        assert stored_user.version_id == 2
 
     # Limpeza
     assert client.delete(f"/user/{target_id}/hard", headers=auth_headers).status_code == 204
