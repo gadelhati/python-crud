@@ -21,6 +21,7 @@ from app.main import app
 from app.models.base import Base
 from app.models.role import Role
 from app.models.user import User
+from app.rate_limit import limiter
 from app.services.password import hash_password
 
 
@@ -28,6 +29,12 @@ def _reset_postgres_schema() -> None:
     with engine.begin() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE"))
         conn.execute(text("CREATE SCHEMA public"))
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter() -> None:
+    """Limpa os contadores do SlowAPI entre testes para evitar 429 cruzado."""
+    limiter.reset()
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -29,7 +29,7 @@ Designed as a foundational platform to plug in modular Python services and micro
 ## Key Features
 
 - **Authentication & Session Security:** PBKDF2-HMAC-SHA256 password hashing (600,000 iterations), JWT access/refresh tokens with `jti` tracking, automatic refresh token rotation, token revocation blacklist, immediate session rejection on user deactivation, and account lockout after 5 consecutive failed login attempts.
-- **Distributed Rate Limiting:** Configurable rate limits via `SlowAPI` (`memory://` or shared `redis://` backend for multi-worker/multi-instance deployments) protecting `/login`, `/login/refresh`, `/admin/init/create-first-user`, and administrative endpoints, in development.
+- **Distributed Rate Limiting:** Configurable rate limits via `SlowAPI` (`memory://` or shared `redis://` backend for multi-worker/multi-instance deployments) protecting `/login`, `/login/refresh`, `/admin/init/create-first-user`, and administrative endpoints.
 - **Role-Based Access Control (RBAC):** Fine-grained permissions (`EnumPermissionAction`) synced automatically on startup, assignable to roles and users, with ownership checks (`SelfOrPermission`).
 - **Enterprise Data Layer:** Generic `BaseRepository` and `SoftDeleteRepository` using SQLAlchemy 2.0, Alembic schema & data migrations (SQLite & PostgreSQL), optimistic locking (`version_id`), and automatic audit fields (`created_by`, `updated_by`, `deleted_by`, timestamps).
 
@@ -86,7 +86,7 @@ Required and optional environment variables:
 - `UVICORN_JWT_REFRESH_SECRET_KEY`: Optional separate secret key for refresh tokens (defaults to `UVICORN_JWT_SECRET_KEY`).
 - `UVICORN_JWT_REFRESH_TOKEN_EXPIRE_MINUTES`: Refresh token lifetime in minutes (default: `10080` / 7 days).
 - `UVICORN_DATABASE_URL`: SQLAlchemy database URL (default: `sqlite:///db.sqlite3`).
-- `UVICORN_RATE_LIMIT_STORAGE_URI`: Rate limit storage backend (`memory://` for single-instance dev or `redis://localhost:6379/0` for multi-instance production), in development.
+- `UVICORN_RATE_LIMIT_STORAGE_URI`: Rate limit storage backend (`memory://` for single-instance dev or `redis://localhost:6379/0` for multi-instance production).
 
 ---
 

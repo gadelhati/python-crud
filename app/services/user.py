@@ -7,6 +7,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.models.role import Role
 from app.models.user import User
 from app.repositories.role import RoleRepository
 from app.repositories.user import UserRepository
@@ -130,3 +131,31 @@ class ServiceUser(ServiceBase[User, UserRequest, UserRequestWithoutPassword, Use
             "is_active": user.is_active,
             "is_verified": user.is_verified,
         }
+
+    def create_first_user(self, data: UserRequest) -> UserResponse:
+        if self.repository.count(include_deleted=True) > 0:
+            raise ServiceError("First user already exists.", "conflict")
+
+        admin_role = self.db.query(Role).filter(Role.name == "admin").first()
+        if admin_role is None:
+            admin_role = Role(
+                name="admin",
+                description="System administrator",
+                is_default=False,
+                is_system=True,
+            )
+            self.db.add(admin_role)
+            self.db.flush()
+
+        user = User(
+            username=data.username,
+            email=data.email,
+            password=hash_password(data.password),
+            first_name=data.first_name,
+            last_name=data.last_name,
+            roles=[admin_role],
+        )
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
+        return UserResponse.model_validate(user, from_attributes=True)

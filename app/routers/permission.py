@@ -13,6 +13,27 @@ from app.services.permission import ServicePermission
 permission = APIRouter(prefix="/permission", tags=["Permission"])
 
 
+@permission.get("/audit", response_model=list[PermissionResponseAudit])
+def find_all_audit(
+    _: AdminUser,
+    db: DbSession,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+):
+    return ServicePermission(db).list_audit(PermissionResponseAudit, page=page, limit=limit)[
+        "items"
+    ]
+
+
+@permission.get("/audit/{permission_id}", response_model=PermissionResponseAudit)
+def find_by_id_audit(
+    permission_id: UUID,
+    _: AdminUser,
+    db: DbSession,
+):
+    return ServicePermission(db).get_audit(permission_id, PermissionResponseAudit)
+
+
 @permission.get("", response_model=list[PermissionResponse])
 def find_all(
     _: Annotated[User, Depends(require_permission(EnumPermissionAction.READ_PERMISSION))],
@@ -44,31 +65,3 @@ def find_by_id(
 @permission.post("/sync", status_code=status.HTTP_204_NO_CONTENT)
 def sync_permissions(_: AdminUser, db: DbSession):
     ServicePermission(db).sync_with_enum()
-
-
-@permission.get("/audit", response_model=list[PermissionResponseAudit])
-def find_all_audit(
-    _: Annotated[User, Depends(require_permission(EnumPermissionAction.READ_PERMISSION))],
-    db: DbSession,
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
-):
-    return ServicePermission(db).list(page=page, limit=limit)["items"]
-
-
-@permission.get("/audit/by-action/{action}", response_model=list[PermissionResponseAudit])
-def find_by_action_audit(
-    action: EnumPermissionAction,
-    _: Annotated[User, Depends(require_permission(EnumPermissionAction.READ_PERMISSION))],
-    db: DbSession,
-):
-    return ServicePermission(db).get_by_action(action)
-
-
-@permission.get("/audit/{permission_id}", response_model=PermissionResponseAudit)
-def find_by_id_audit(
-    permission_id: UUID,
-    _: Annotated[User, Depends(require_permission(EnumPermissionAction.READ_PERMISSION))],
-    db: DbSession,
-):
-    return ServicePermission(db).get(permission_id)

@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     jwt_refresh_secret_key: SecretStr | None = None
     jwt_refresh_token_expire_minutes: int = 60 * 24 * 7
     database_url: str = Field(min_length=1)
+    rate_limit_storage_uri: str = "memory://"
+    rate_limit_login: str = "10/minute"
+    rate_limit_refresh: str = "10/minute"
+    rate_limit_bootstrap: str = "3/minute"
 
     @model_validator(mode="after")
     def set_default_refresh_secret(self) -> "Settings":

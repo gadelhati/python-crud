@@ -23,6 +23,25 @@ from app.services.user import ServiceUser
 user = APIRouter(prefix="/user", tags=["User"])
 
 
+@user.get("/audit", response_model=list[UserResponseAudit])
+def find_all_audit(
+    _: AdminUser,
+    db: DbSession,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+):
+    return ServiceUser(db).list_audit(UserResponseAudit, page=page, limit=limit)["items"]
+
+
+@user.get("/audit/{user_id}", response_model=UserResponseAudit)
+def find_by_id_audit(
+    user_id: UUID,
+    _: AdminUser,
+    db: DbSession,
+):
+    return ServiceUser(db).get_audit(user_id, UserResponseAudit)
+
+
 @user.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create(
     request: UserRequest,
@@ -97,22 +116,3 @@ def get_security_status(user_id: UUID, _: AdminUser, db: DbSession):
 @user.patch("/{user_id}/unlock", status_code=status.HTTP_204_NO_CONTENT)
 def unlock_account(user_id: UUID, current_user: AdminUser, db: DbSession):
     ServiceUser(db).unlock_account(user_id, current_user_id=current_user.id)
-
-
-@user.get("/audit/", response_model=list[UserResponseAudit])
-def find_all_audit(
-    _: Annotated[User, Depends(require_permission(EnumPermissionAction.READ_USER))],
-    db: DbSession,
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
-):
-    return ServiceUser(db).list(page=page, limit=limit)["items"]
-
-
-@user.get("/audit/{user_id}", response_model=UserResponseAudit)
-def find_by_id_audit(
-    user_id: UUID,
-    _: Annotated[User, Depends(require_self_or_permission(EnumPermissionAction.READ_USER))],
-    db: DbSession,
-):
-    return ServiceUser(db).get(user_id)

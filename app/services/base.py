@@ -166,3 +166,33 @@ class ServiceBase[
             )
         self.repository.save(entity)
         return self._to_dto(entity)
+
+    def get_audit[A: BaseModel](
+        self, id: UUID, audit_schema: type[A], include_deleted: bool = True
+    ) -> A:
+        entity = self._get_or_404(id, include_deleted=include_deleted)
+        return audit_schema.model_validate(entity, from_attributes=True)
+
+    def list_audit[A: BaseModel](
+        self,
+        audit_schema: type[A],
+        page: int = 1,
+        limit: int = 20,
+        include_deleted: bool = True,
+    ) -> dict[str, Any]:
+        total = self.repository.count(include_deleted=include_deleted)
+        items = self.repository.find_all(
+            offset=(page - 1) * limit, limit=limit, include_deleted=include_deleted
+        )
+        total_pages = ceil(total / limit) if limit else 1
+        return {
+            "items": [audit_schema.model_validate(i, from_attributes=True) for i in items],
+            "pagination": DTOPagination(
+                total=total,
+                page=page,
+                limit=limit,
+                total_pages=total_pages,
+                has_next=page < total_pages,
+                has_prev=page > 1 and total > 0,
+            ),
+        }
