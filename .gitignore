@@ -20,7 +20,7 @@ build/
 .pytest_cache/
 htmlcov/
 .coverage
-test.db
+db_test.sqlite3
 *.sqlite3
 
 # Linter

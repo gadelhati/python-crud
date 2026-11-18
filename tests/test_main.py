@@ -1,7 +1,7 @@
 import os
 from uuid import UUID, uuid4
 
-os.environ.setdefault("UVICORN_DATABASE_URL", "sqlite:///./test.db")
+os.environ.setdefault("UVICORN_DATABASE_URL", "sqlite:///./db_test.sqlite3")
 os.environ.setdefault(
     "UVICORN_JWT_SECRET_KEY",
     "test-secret-key-with-at-least-thirty-two-characters",
