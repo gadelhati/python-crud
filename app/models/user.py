@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, DateTime, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, AuditMixin, IdMixin
+from app.models.base import AuditMixin, Base, IdMixin
 from app.models.join import user_roles
 
 if TYPE_CHECKING:
