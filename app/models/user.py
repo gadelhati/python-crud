@@ -6,14 +6,14 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, DateTime, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import EntityBase
+from app.models.base import Base, AuditMixin, IdMixin
 from app.models.join import user_roles
 
 if TYPE_CHECKING:
     from app.models.role import Role
 
 
-class User(EntityBase):
+class User(Base, IdMixin, AuditMixin):
     """User entity representing a user in the system."""
 
     __tablename__ = "users"

@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import EmailStr, Field, field_validator
 
-from app.schemas.base import SchemaBase, SchemaSoftDelete
+from app.schemas.base import SchemaBase, SchemaId
 from app.schemas.role import RoleResponse
 from app.validations.user import UserValidation
 
@@ -66,13 +66,9 @@ class UserRequest(UserRequestWithoutPassword):
         return v
 
 
-class UserResponse(SchemaSoftDelete):
+class UserResponse(UserBase, SchemaId):
     """Schema for user responses."""
 
-    username: str
-    email: EmailStr
-    first_name: str | None = None
-    last_name: str | None = None
     is_active: bool
     is_verified: bool
     last_login: datetime | None = None

@@ -16,7 +16,7 @@ class IdMixin:
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
 
 
-class TimestampMixin:
+class AuditMixin:
     """Mixin providing created_at and updated_at timestamps."""
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -61,7 +61,7 @@ class TimestampMixin:
         }
 
 
-class EntityBase(Base, IdMixin, TimestampMixin):
+class EntityBase(Base, IdMixin, AuditMixin):
     """Base class for entities with a UUID primary key."""
 
     __abstract__ = True

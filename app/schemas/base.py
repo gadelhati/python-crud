@@ -18,26 +18,26 @@ class SchemaBase(BaseModel):
     )
 
 
-class SchemaAudit(SchemaBase):
-    """Schema containing entity identification and audit fields."""
+class SchemaId(SchemaBase):
+    """Schema containing entity identification."""
 
     id: UUID
+
+
+class SchemaAudit(SchemaId):
+    """Schema containing entity identification and audit fields."""
+
     created_at: datetime
     updated_at: datetime
+    deleted_at: datetime | None = None
     created_by: UUID | None = None
     updated_by: UUID | None = None
+    deleted_by: UUID | None = None
     version_id: int = Field(
         ge=1,
         description="Optimistic locking version",
         examples=[1],
     )
-
-
-class SchemaSoftDelete(SchemaAudit):
-    """Schema containing audit and soft delete fields."""
-
-    deleted_at: datetime | None = None
-    deleted_by: UUID | None = None
 
 
 class DTOPagination(SchemaBase):

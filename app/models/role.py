@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import EntityBase
+from app.models.base import AuditMixin, Base, IdMixin
 from app.models.join import role_permissions, user_roles
 
 if TYPE_CHECKING:
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class Role(EntityBase):
+class Role(Base, IdMixin, AuditMixin):
     """Role model"""
 
     __tablename__ = "roles"

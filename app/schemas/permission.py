@@ -3,9 +3,7 @@ from __future__ import annotations
 from pydantic import Field
 
 from app.enum.permission_action import EnumPermissionAction
-from app.schemas.base import (
-    SchemaBase,
-)
+from app.schemas.base import SchemaBase, SchemaId
 from app.validations.permission import PermissionValidation
 
 
@@ -26,5 +24,5 @@ class PermissionRequest(PermissionBase):
     """Schema for permission creation and update requests."""
 
 
-class PermissionResponse(PermissionBase):
+class PermissionResponse(PermissionBase, SchemaId):
     """Schema for permission responses."""

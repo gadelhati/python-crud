@@ -6,14 +6,14 @@ from sqlalchemy import Enum, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.enum.permission_action import EnumPermissionAction
-from app.models.base import EntityBase
+from app.models.base import AuditMixin, Base, IdMixin
 from app.models.join import role_permissions
 
 if TYPE_CHECKING:
     from app.models.role import Role
 
 
-class Permission(EntityBase):
+class Permission(Base, IdMixin, AuditMixin):
     """Permission model"""
 
     __tablename__ = "permissions"
