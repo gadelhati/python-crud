@@ -1,8 +1,8 @@
 """initial schema
 
-Revision ID: 3d05edfd71f5
+Revision ID: 1e3e2e452876
 Revises:
-Create Date: 2026-11-17 15:38:12.195536
+Create Date: 2026-11-17 21:49:26.498213
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "3d05edfd71f5"
+revision: str = "1e3e2e452876"
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
@@ -238,7 +238,3 @@ def downgrade() -> None:
 
     op.drop_table("permissions")
     # ### end Alembic commands ###
-
-    bind = op.get_bind()
-    if bind.dialect.name == "postgresql":
-        op.execute(sa.text("DROP TYPE IF EXISTS enum_permission_action"))

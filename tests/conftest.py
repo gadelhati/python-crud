@@ -14,6 +14,7 @@ os.environ.setdefault(
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 
 from app.database import SessionLocal, engine
 from app.main import app
@@ -23,11 +24,25 @@ from app.models.user import User
 from app.services.password import hash_password
 
 
+def _reset_postgres_schema() -> None:
+    with engine.begin() as conn:
+        conn.execute(text("DROP SCHEMA public CASCADE"))
+        conn.execute(text("CREATE SCHEMA public"))
+
+
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_database() -> Generator[None]:
+    is_pg = engine.dialect.name == "postgresql"
+    if is_pg:
+        _reset_postgres_schema()
+    else:
+        Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     yield
-    Base.metadata.drop_all(bind=engine)
+    if is_pg:
+        _reset_postgres_schema()
+    else:
+        Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture
