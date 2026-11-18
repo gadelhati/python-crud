@@ -13,6 +13,25 @@ from app.services.role import ServiceRole
 role = APIRouter(prefix="/role", tags=["Role"])
 
 
+@role.get("/audit", response_model=list[RoleResponseAudit])
+def find_all_audit(
+    _: AdminUser,
+    db: DbSession,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+):
+    return ServiceRole(db).list_audit(RoleResponseAudit, page=page, limit=limit)["items"]
+
+
+@role.get("/audit/{role_id}", response_model=RoleResponseAudit)
+def find_by_id_audit(
+    role_id: UUID,
+    _: AdminUser,
+    db: DbSession,
+):
+    return ServiceRole(db).get_audit(role_id, RoleResponseAudit)
+
+
 @role.post("", response_model=RoleResponse, status_code=status.HTTP_201_CREATED)
 def create(
     request: RoleRequest,
@@ -96,30 +115,3 @@ def restore_by_id(
     db: DbSession,
 ):
     return ServiceRole(db).restore(role_id, current_user_id=current_user.id)
-
-
-@role.get("/audit", response_model=list[RoleResponseAudit])
-def find_all_audit(
-    _: AdminUser,
-    db: DbSession,
-    page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
-):
-    return ServiceRole(db).list_audit(RoleResponseAudit, page=page, limit=limit)
-
-
-@role.get("/audit/defaults", response_model=list[RoleResponseAudit])
-def find_defaults_audit(
-    _: Annotated[User, Depends(require_permission(EnumPermissionAction.READ_ROLE))],
-    db: DbSession,
-):
-    return ServiceRole(db).get_default_roles()
-
-
-@role.get("/audit/{role_id}", response_model=RoleResponseAudit)
-def find_by_id_audit(
-    role_id: UUID,
-    _: AdminUser,
-    db: DbSession,
-):
-    return ServiceRole(db).get_audit(role_id, RoleResponseAudit)

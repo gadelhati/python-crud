@@ -133,7 +133,7 @@ class ServiceUser(ServiceBase[User, UserRequest, UserRequestWithoutPassword, Use
         }
 
     def create_first_user(self, data: UserRequest) -> UserResponse:
-        if self.repository.count(include_deleted=True) > 0:
+        if self.repository.count() > 0:
             raise ServiceError("First user already exists.", "conflict")
 
         admin_role = self.db.query(Role).filter(Role.name == "admin").first()
