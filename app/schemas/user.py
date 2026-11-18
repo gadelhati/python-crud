@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import EmailStr, Field, field_validator
 
-from app.schemas.base import SchemaBase, SchemaId
+from app.schemas.base import SchemaAudit, SchemaBase, SchemaId
 from app.schemas.role import RoleResponse
 from app.validations.user import UserValidation
 
@@ -68,6 +68,15 @@ class UserRequest(UserRequestWithoutPassword):
 
 class UserResponse(UserBase, SchemaId):
     """Schema for user responses."""
+
+    is_active: bool
+    is_verified: bool
+    last_login: datetime | None = None
+    roles: list[RoleResponse] = Field(default_factory=list)
+
+
+class UserResponseAudit(UserBase, SchemaAudit):
+    """Schema for user responses with audiction."""
 
     is_active: bool
     is_verified: bool

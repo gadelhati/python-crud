@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import Field, field_validator
 
-from app.schemas.base import SchemaBase, SchemaId
+from app.schemas.base import SchemaAudit, SchemaBase, SchemaId
 from app.schemas.permission import PermissionResponse
 from app.validations.role import RoleValidation
 
@@ -57,5 +57,11 @@ class RoleRequest(RoleBase):
 
 class RoleResponse(RoleBase, SchemaId):
     """Schema for role responses."""
+
+    permissions: list[PermissionResponse] = Field(default_factory=list)
+
+
+class RoleResponseAudit(RoleBase, SchemaAudit):
+    """Schema for role responses with audiction."""
 
     permissions: list[PermissionResponse] = Field(default_factory=list)
