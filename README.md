@@ -28,47 +28,46 @@ Designed as a foundational platform to plug in modular Python services and micro
 
 ## Key Features
 
-- **Authentication & Session Security:** PBKDF2-HMAC-SHA256 password hashing (600,000 iterations), JWT access/refresh tokens with `jti` tracking, automatic refresh token rotation, token revocation blacklist, immediate session rejection on user deactivation, and account lockout after 5 consecutive failed login attempts.
-- **Distributed Rate Limiting:** Configurable rate limits via `SlowAPI` (`memory://` or shared `redis://` backend for multi-worker/multi-instance deployments) protecting `/login`, `/login/refresh`, `/admin/init/create-first-user`, and administrative endpoints.
-- **Role-Based Access Control (RBAC):** Fine-grained permissions (`EnumPermissionAction`) synced automatically on startup, assignable to roles and users, with ownership checks (`SelfOrPermission`).
-- **Enterprise Data Layer:** Generic `BaseRepository` and `SoftDeleteRepository` using SQLAlchemy 2.0, Alembic schema & data migrations (SQLite & PostgreSQL), optimistic locking (`version_id`), and automatic audit fields (`created_by`, `updated_by`, `deleted_by`, timestamps).
-
----
+- **Authentication & Token Security:**
+  - PBKDF2-HMAC-SHA256 password hashing with random salts.
+  - Access and refresh JWT tokens with `jti` tracking, database-backed token blacklisting, automatic token rotation on refresh, and immediate rejection of deactivated accounts.
+  - Account lockout after consecutive failed login attempts (`423 Locked`), with administrative unlock support.
+- **Rate Limiting (`SlowAPI`):**
+  - Centralized limiter configuration in `app/rate_limit.py` supporting in-memory (`memory://`) or Redis (`redis://`) backends.
+  - Configurable rate limits on critical endpoints (`POST /login`, `POST /login/refresh`, and `POST /admin/init/create-first-user`) returning `429 Too Many Requests`.
+- **RBAC & Unified Audit Trails:**
+  - Granular permission synchronization (`EnumPermissionAction`) across users, roles, and permissions.
+  - Standardized audit endpoints (`GET /user/audit`, `GET /user/audit/{id}`, `GET /role/audit`, `GET /role/audit/{id}`, `GET /permission/audit`, `GET /permission/audit/{id}`) restricted to administrators (`AdminUser`), exposing `created_by`, `updated_by`, `deleted_by`, `deleted_at`, and `version_id` (including soft-deleted records).
+- **Data Layer & Concurrency:**
+  - Generic repository and service patterns (`ServiceBase` with `get_audit` and `list_audit`) built on SQLAlchemy 2.0.
+  - Alembic database migrations supporting SQLite and PostgreSQL.
+  - Soft delete, restore, hard delete, and optimistic locking (`version_id`).
 
 ## Endpoints
 
-### Public & System Bootstrap
-- `GET /` — Returns `{"message": "Hello, World!"}`.
-- `GET /health` — Health check endpoint returning `{"status": "healthy"}`.
-- `POST /admin/init/create-first-user` — Initializes the database with the first `admin` user and syncs all permissions (only works when the database has zero users; returns `409 Conflict` afterward).
+### Public & Bootstrap
+- `GET /` — Root welcome response
+- `GET /health` — Lightweight liveness check
+- `POST /admin/init/create-first-user` — Bootstrap initial administrator account (rate-limited)
 
 ### Authentication
-- `POST /login` — Authenticates username or email and returns `access_token` and `refresh_token`.
-- `POST /login/refresh` — Rotates the session by issuing a new token pair and revoking the used `refresh_token`.
-- `POST /login/logout` — Revokes the provided `refresh_token` in the blacklist.
+- `POST /login` — Authenticate and issue access + refresh tokens (rate-limited)
+- `POST /login/refresh` — Rotate refresh token and issue new token pair (rate-limited)
+- `POST /login/logout` — Revoke refresh token in blacklist
 
-### Users (`/user` — Requires JWT Bearer Token)
-- `POST /user` — Creates a new user *(requires `CREATE_USER` permission or `admin`)*.
-- `GET /user` — Lists active users with pagination (`page`, `limit`).
-- `GET /user/{user_id}` — Retrieves an active user *(owner or `READ_USER`)*.
-- `PUT /user/{user_id}` — Updates an active user *(owner or `UPDATE_USER`)*.
-- `DELETE /user/{user_id}` — Soft-deletes a user *(owner or `DELETE_USER`)*.
-- `PATCH /user/{user_id}/restore` — Restores a soft-deleted user *(requires `admin`)*.
-- `DELETE /user/{user_id}/hard` — Permanently deletes a user *(requires `admin`)*.
-- `GET /user/{user_id}/security` — Returns lockout and failed login status *(requires `admin`)*.
-- `PATCH /user/{user_id}/unlock` — Unlocks a locked account and resets failed attempts *(requires `admin`)*.
+### Users, Roles & Permissions
+- `GET /user`, `POST /user`, `GET /user/{user_id}`, `PATCH /user/{user_id}`, `DELETE /user/{user_id}`, `POST /user/{user_id}/restore`, `DELETE /user/{user_id}/hard`, `POST /user/{user_id}/unlock`
+- `GET /role`, `POST /role`, `GET /role/{role_id}`, `PATCH /role/{role_id}`, `DELETE /role/{role_id}`, `POST /role/{role_id}/restore`, `DELETE /role/{role_id}/hard`
+- `GET /permission`, `POST /permission`, `GET /permission/{permission_id}`, `PATCH /permission/{permission_id}`, `DELETE /permission/{permission_id}`, `POST /permission/{permission_id}/restore`, `DELETE /permission/{permission_id}/hard`
 
-### Roles & Permissions (`/role`, `/permission` — Requires JWT Bearer Token)
-- `POST /role`, `GET /role`, `GET /role/defaults`, `GET /role/{role_id}`, `PUT /role/{role_id}`, `DELETE /role/{role_id}`, `DELETE /role/{role_id}/hard`, `PATCH /role/{role_id}/restore` — Full Role lifecycle management.
-- `PATCH /role/{role_id}/permissions` — Replaces permissions assigned to a role.
-- `GET /permission`, `GET /permission/{permission_id}`, `GET /permission/by-action/{action}` — Read-only permission queries.
-- `POST /permission/sync` — Manually syncs `EnumPermissionAction` values with the database *(requires `admin`)*.
-
----
+### Audit Endpoints (`AdminUser` only)
+- `GET /user/audit` and `GET /user/audit/{user_id}`
+- `GET /role/audit` and `GET /role/audit/{role_id}`
+- `GET /permission/audit` and `GET /permission/audit/{permission_id}`
 
 ## Configuration
 
-Copy the environment template and configure your secrets:
+Copy `.env.example` to `.env` and configure the environment variables:
 
 ### _Windows PowerShell_
 ```powershell
@@ -80,19 +79,25 @@ Copy-Item .env.example .env
 cp .env.example .env
 ```
 
-Required and optional environment variables:
-- `UVICORN_JWT_SECRET_KEY`: Secret key with **at least 32 characters** for signing access tokens.
-- `UVICORN_JWT_ACCESS_TOKEN_EXPIRE_MINUTES`: Access token lifetime in minutes (default: `30`).
-- `UVICORN_JWT_REFRESH_SECRET_KEY`: Optional separate secret key for refresh tokens (defaults to `UVICORN_JWT_SECRET_KEY`).
-- `UVICORN_JWT_REFRESH_TOKEN_EXPIRE_MINUTES`: Refresh token lifetime in minutes (default: `10080` / 7 days).
-- `UVICORN_DATABASE_URL`: SQLAlchemy database URL (default: `sqlite:///db.sqlite3`).
-- `UVICORN_RATE_LIMIT_STORAGE_URI`: Rate limit storage backend (`memory://` for single-instance dev or `redis://localhost:6379/0` for multi-instance production).
+| Variable | Default | Description |
+| :--- | :--- | :--- |
+| `UVICORN_HOST` | `127.0.0.1` | Server bind host |
+| `UVICORN_PORT` | `9000` | Server bind port |
+| `UVICORN_ROOT_PATH` | `""` | ASGI root path |
+| `UVICORN_RELOAD` | `false` | Enable auto-reload in development |
+| `UVICORN_JWT_SECRET_KEY` | *(required)* | Secret key for signing access tokens (min 32 chars) |
+| `UVICORN_JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Access token lifetime in minutes |
+| `UVICORN_JWT_REFRESH_SECRET_KEY` | `None` | Optional separate secret key for refresh tokens |
+| `UVICORN_JWT_REFRESH_TOKEN_EXPIRE_MINUTES` | `10080` | Refresh token lifetime in minutes (7 days) |
+| `UVICORN_DATABASE_URL` | *(required)* | SQLAlchemy database connection URL |
+| `UVICORN_RATE_LIMIT_STORAGE_URI` | `memory://` | SlowAPI storage backend (`memory://` or `redis://...`) |
+| `UVICORN_RATE_LIMIT_LOGIN` | `10/minute` | Rate limit for `POST /login` |
+| `UVICORN_RATE_LIMIT_REFRESH` | `10/minute` | Rate limit for `POST /login/refresh` |
+| `UVICORN_RATE_LIMIT_BOOTSTRAP` | `3/minute` | Rate limit for `POST /admin/init/create-first-user` |
 
----
+## Local Setup & Running
 
-## Development
-
-This project requires **Python 3.13** or later.
+This project requires **Python 3.13** (`>=3.13,<3.16`).
 
 ```bash
 # create virtual environment
@@ -137,6 +142,8 @@ python -m zipfile -l dist/python_crud-1.0.0-py3-none-any.whl
 # run application (*)
 python -m app.main
 ```
+
+Interactive API documentation is available at `http://127.0.0`.
 
 ## Code Quality (Ruff)
 
