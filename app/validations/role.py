@@ -1,6 +1,5 @@
 # app/validations/role.py - Centralized validation rules for
 # role-related data
-from pydantic import field_validator
 
 
 class RoleValidation:
@@ -23,8 +22,3 @@ class RoleValidation:
         if not result:
             raise ValueError(f"{field_name} is required")
         return result
-
-    @field_validator("description")
-    @classmethod
-    def validate_description(cls, v: str | None) -> str | None:
-        return RoleValidation.validate_name(v, "Description")
