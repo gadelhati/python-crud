@@ -15,14 +15,36 @@ Production-ready FastAPI core boilerplate featuring **JWT Authentication**, **Re
 
 Designed as a foundational platform to plug in modular Python services and microservices under a unified authentication and authorization layer.
 
----
+## Project Structure
+
+```text
+python-crud/
+├── alembic/                  # Database migrations
+├── app/
+│   ├── enums/                # Permission and domain enums
+│   ├── models/               # SQLAlchemy ORM models
+│   ├── repositories/         # Data access layer with soft-delete support
+│   ├── routers/              # FastAPI route handlers (admin, auth, base, user, role, permission)
+│   ├── schemas/              # Pydantic request/response and audit schemas
+│   ├── services/             # Business logic, password hashing, JWT, and audit services
+│   ├── config.py             # Pydantic Settings configuration (UVICORN_ prefix)
+│   ├── database.py           # Engine and SessionLocal setup
+│   ├── dependencies.py       # Auth, RBAC, and DB session dependencies
+│   ├── main.py               # FastAPI app initialization, lifespan, and exception handlers
+│   └── rate_limit.py         # SlowAPI Limiter instance
+├── tests/                    # Pytest test suite
+├── .env.example              # Environment variable template
+├── AGENTS.md                 # AI and contributor coding guidelines
+├── CONTRIBUTING.md           # Contribution workflow and standards
+└── pyproject.toml            # Dependencies and Ruff configuration
+```
 
 ## Tech Stack
 
 ![Python](https://img.shields.io/badge/Python-3.13%2B-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
-![PostgreSQL](https://shields.io)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.5-blue?logo=postgresql)
 
 ---
 
