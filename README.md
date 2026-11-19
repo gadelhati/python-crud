@@ -78,9 +78,9 @@ python-crud/
 - `POST /login/logout` — Revoke refresh token in blacklist
 
 ### Users, Roles & Permissions
-- `GET /user`, `POST /user`, `GET /user/{user_id}`, `PATCH /user/{user_id}`, `DELETE /user/{user_id}`, `POST /user/{user_id}/restore`, `DELETE /user/{user_id}/hard`, `POST /user/{user_id}/unlock`
-- `GET /role`, `POST /role`, `GET /role/{role_id}`, `PATCH /role/{role_id}`, `DELETE /role/{role_id}`, `POST /role/{role_id}/restore`, `DELETE /role/{role_id}/hard`
-- `GET /permission`, `POST /permission`, `GET /permission/{permission_id}`, `PATCH /permission/{permission_id}`, `DELETE /permission/{permission_id}`, `POST /permission/{permission_id}/restore`, `DELETE /permission/{permission_id}/hard`
+- `GET /user`, `POST /user`, `GET /user/{user_id}`, `PUT /user/{user_id}`, `DELETE /user/{user_id}`, `PATCH /user/{user_id}/restore`, `DELETE /user/{user_id}/hard`, `POST /user/{user_id}/unlock`
+- `GET /role`, `POST /role`, `GET /role/{role_id}`, `PUT /role/{role_id}`, `DELETE /role/{role_id}`, `PATCH /role/{role_id}/restore`, `DELETE /role/{role_id}/hard`
+- `GET /permission`, `POST /permission`, `GET /permission/{permission_id}`, `PUT /permission/{permission_id}`, `DELETE /permission/{permission_id}`, `PATCH /permission/{permission_id}/restore`, `DELETE /permission/{permission_id}/hard`
 
 ### Audit Endpoints (`AdminUser` only)
 - `GET /user/audit` and `GET /user/audit/{user_id}`
