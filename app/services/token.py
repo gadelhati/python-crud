@@ -23,7 +23,7 @@ def _encode(user_id: UUID, secret: str, minutes: int) -> str:
     return jwt.encode(payload, secret, algorithm=_ALGORITHM)
 
 
-def _decode(token: str, secret: str) -> UUID:
+def _decode(token: str, secret: str) -> tuple[UUID, str, datetime]:
     try:
         payload = jwt.decode(
             token,
@@ -42,7 +42,6 @@ def _decode(token: str, secret: str) -> UUID:
 
 
 def create_access_token(user_id: UUID) -> str:
-    assert settings.jwt_refresh_secret_key is not None
     return _encode(
         user_id,
         settings.jwt_secret_key.get_secret_value(),
