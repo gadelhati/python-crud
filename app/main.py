@@ -61,7 +61,7 @@ STATUS_BY_ERROR_CODE: dict[str, int] = {
     "account_locked": status.HTTP_423_LOCKED,
     "conflict": status.HTTP_409_CONFLICT,
     "integrity_error": status.HTTP_409_CONFLICT,
-    "validation_error": status.HTTP_422_UNPROCESSABLE_CONTENT,
+    "validation_error": status.HTTP_422_UNPROCESSABLE_ENTITY,
     "invalid_operation": status.HTTP_400_BAD_REQUEST,
 }
 

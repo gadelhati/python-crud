@@ -4,6 +4,8 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 import jwt
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.services.base import ServiceError
@@ -56,8 +58,30 @@ def create_refresh_token(user_id: UUID) -> str:
     )
 
 
-def decode_access_token(token: str) -> UUID:
-    user_id, _, _ = _decode(token, settings.jwt_secret_key.get_secret_value())
+def decode_access_token(token: str, db: Session | None = None) -> UUID:
+    """Decode access token and optionally check if revoked.
+
+    Args:
+        token: JWT access token
+        db: Optional database session for revocation check.
+            If provided, validates token is not revoked.
+            If None, skips revocation check (less secure).
+
+    Returns:
+        user_id UUID if token is valid and not revoked
+
+    Raises:
+        ServiceError: If token is expired, invalid, or revoked
+    """
+    user_id, jti, _ = _decode(token, settings.jwt_secret_key.get_secret_value())
+
+    if db is not None:
+        from app.models.revoked_token import RevokedToken
+
+        stmt = select(RevokedToken.jti).where(RevokedToken.jti == jti)
+        if db.scalar(stmt) is not None:
+            raise ServiceError("Token has been revoked", code="invalid_token")
+
     return user_id
 
 

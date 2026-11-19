@@ -50,7 +50,8 @@ def get_authenticated_user(
         )
 
     try:
-        user_id = decode_access_token(token)
+        # Decode and check if token is revoked (not on blacklist)
+        user_id = decode_access_token(token, db)
     except ServiceError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

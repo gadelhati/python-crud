@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy import delete, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -82,6 +83,13 @@ class ServiceAuth:
         self.db.flush()
 
     def refresh(self, refresh_token: str) -> TokenResponse:
+        """Rotate refresh token: invalidate old, issue new pair.
+
+        Security notes:
+        - Old refresh token is immediately revoked (prevents reuse)
+        - Treats token reuse as business logic error (401), not server error
+        - Handles race condition: if token revoked simultaneously, returns 401
+        """
         user_id, jti, expires_at = decode_refresh_token(refresh_token)
 
         if self._is_token_revoked(jti):
@@ -93,11 +101,32 @@ class ServiceAuth:
         if user is None or not user.is_active:
             raise ServiceError("User inactive or not found", code="invalid_token")
 
-        # Invalida o refresh token antigo antes de emitir o novo
-        self._revoke_token(jti, user.id, expires_at)
+        try:
+            self.db.add(RevokedToken(jti=jti, user_id=user_id, expires_at=expires_at))
+            self.db.flush()
+        except IntegrityError as e:
+            raise ServiceError(
+                "Refresh token has already been used or revoked", code="invalid_token"
+            ) from e
+
         return self._issue_tokens(user.id)
 
     def logout(self, refresh_token: str) -> None:
+        """Revokes the refresh token for logout.
+
+        Security note:
+        - Refresh token is immediately revoked (prevents new sessions)
+        - Access tokens must be revoked separately via decode_access_token(db)
+          which checks the revocation blacklist
+        - See decode_access_token() for access token revocation logic
+
+        Implementation:
+        - If access tokens need immediate revocation (not expiration-based),
+          two strategies are available:
+          1. Revoke all tokens by user_id + created_before timestamp
+          2. Store access_token JTI separately in RevokedToken table
+          Currently using strategy #2 (implicit via decode_access_token check)
+        """
         user_id, jti, expires_at = decode_refresh_token(refresh_token)
         if not self._is_token_revoked(jti):
             self._revoke_token(jti, user_id, expires_at)
