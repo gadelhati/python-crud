@@ -14,6 +14,7 @@ from sqlalchemy.exc import (
     TimeoutError as SQLAlchemyTimeoutError,
 )
 from sqlalchemy.orm.exc import StaleDataError
+
 from app.services.errors import ServiceError
 
 logger = logging.getLogger(__name__)
