@@ -1,8 +1,8 @@
 """describe change
 
-Revision ID: ac45b28b167e
-Revises: 8677ec7d80e9
-Create Date: 2026-11-18 13:07:28.416693
+Revision ID: 24d50bd0e88b
+Revises: 652bff512de2
+Create Date: 2026-11-18 22:50:46.971038
 
 """
 
@@ -13,8 +13,8 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "ac45b28b167e"
-down_revision: str | Sequence[str] | None = "8677ec7d80e9"
+revision: str = "24d50bd0e88b"
+down_revision: str | Sequence[str] | None = "652bff512de2"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
