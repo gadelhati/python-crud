@@ -34,7 +34,8 @@ class ServiceAuth:
         self.users = UserRepository(db)
 
     def authenticate(self, username: str, password: str) -> User:
-        """Validates credentials and manages lockout. Do NOT expose directly in the API."""
+        """Validates credentials and manages lockout.
+        Do NOT expose directly in the API."""
         invalid = ServiceError("Incorrect username or password", code="invalid_credentials")
         user = self.users.find_by_username_or_email(username)
         if user is None or not user.is_active:
@@ -59,7 +60,6 @@ class ServiceAuth:
             if user.failed_login_attempts >= self.MAX_FAILED_ATTEMPTS:
                 user.locked_until = now + self.LOCKOUT_DURATION
                 logger.warning("Account locked for excessive attempts: %s", username)
-            # Persiste o incremento/bloqueio antes de lançar a exceção (evita rollback no get_db)
             self.db.commit()
             raise invalid
 

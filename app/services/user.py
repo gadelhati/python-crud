@@ -133,6 +133,7 @@ class ServiceUser(ServiceBase[User, UserRequest, UserRequestWithoutPassword, Use
         }
 
     def create_first_user(self, data: UserRequest) -> UserResponse:
+        """Creates the first admin user. Transaction commit handled by get_db() dependency."""
         if self.repository.count() > 0:
             raise ServiceError("First user already exists.", "conflict")
 
@@ -156,6 +157,6 @@ class ServiceUser(ServiceBase[User, UserRequest, UserRequestWithoutPassword, Use
             roles=[admin_role],
         )
         self.db.add(user)
-        self.db.commit()
+        self.db.flush()
         self.db.refresh(user)
         return UserResponse.model_validate(user, from_attributes=True)

@@ -7,9 +7,8 @@ from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-from sqlalchemy.orm.exc import StaleDataError
 
 from app.models.base import EntityBase
 from app.repositories.base import SoftDeleteRepository
@@ -66,24 +65,6 @@ class ServiceBase[
             entity.created_by = user_id
         else:
             entity.updated_by = user_id
-
-    def _commit(self) -> None:
-        try:
-            self.db.commit()
-        except StaleDataError as e:
-            self.db.rollback()
-            logger.warning("Optimistic lock conflict on %s: %s", self._name(), e)
-            raise ServiceError(
-                f"{self._name()} was modified by another transaction", code="conflict"
-            ) from e
-        except IntegrityError as e:
-            self.db.rollback()
-            logger.error("Integrity error committing %s: %s", self._name(), e)
-            raise ServiceError(f"Integrity error on {self._name()}", code="integrity_error") from e
-        except SQLAlchemyError as e:
-            self.db.rollback()
-            logger.error("Error committing %s: %s", self._name(), e)
-            raise ServiceError(f"Unexpected error on {self._name()}") from e
 
     @staticmethod
     def _validate_ids(ids: Sequence[UUID], max_items: int, label: str) -> None:
@@ -146,16 +127,15 @@ class ServiceBase[
         return self._to_dto(entity)
 
     def delete(self, id: UUID) -> bool:
-        """Hard delete."""
+        """Hard delete. Transaction commit handled by get_db() dependency."""
         if not self.repository.delete_by_id(id):
             raise ServiceError(f"{self._name()} with id {id} not found", code="not_found")
-        self._commit()
         return True
 
     def soft_delete(self, id: UUID, current_user_id: UUID | None = None) -> bool:
+        """Soft delete. Transaction commit handled by get_db() dependency."""
         if not self.repository.soft_delete_by_id(id, current_user_id):
             raise ServiceError(f"{self._name()} with id {id} not found", code="not_found")
-        self._commit()
         return True
 
     def restore(self, id: UUID, current_user_id: UUID | None = None) -> R:
