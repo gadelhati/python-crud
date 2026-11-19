@@ -96,7 +96,9 @@ def test_audit_endpoints_require_admin_role(
 
             ok_res = client.get(endpoint, headers=auth_headers)
             assert ok_res.status_code == 200
-            assert isinstance(ok_res.json(), list)
+            body = ok_res.json()
+            assert isinstance(body["items"], list)
+            assert body["total"] >= len(body["items"])
     finally:
         with SessionLocal() as db:
             stored_user = db.get(User, regular_user_id)
@@ -135,7 +137,7 @@ def test_user_and_role_audit_include_soft_deleted_records(
 
     user_audit_list = client.get("/user/audit?limit=100", headers=auth_headers)
     assert user_audit_list.status_code == 200
-    assert any(item["id"] == created_user_id for item in user_audit_list.json())
+    assert any(item["id"] == created_user_id for item in user_audit_list.json()["items"])
 
     # 2. Cria e deleta (soft delete) uma role para validar auditoria
     role_payload = {
@@ -160,7 +162,7 @@ def test_user_and_role_audit_include_soft_deleted_records(
     # 3. Consulta listagem e detalhe de auditoria de permission
     perm_audit_list = client.get("/permission/audit", headers=auth_headers)
     assert perm_audit_list.status_code == 200
-    permissions = perm_audit_list.json()
+    permissions = perm_audit_list.json()["items"]
     assert len(permissions) > 0
 
     first_perm_id = permissions[0]["id"]

@@ -81,23 +81,26 @@ class ServiceBase[
     def get(self, id: UUID, include_deleted: bool = False) -> R:
         return self._to_dto(self._get_or_404(id, include_deleted=include_deleted))
 
+    @staticmethod
+    def _page(items: list[Any], total: int, page: int, limit: int) -> dict[str, Any]:
+        """Builds the flat shape expected by PaginatedResponse."""
+        total_pages = ceil(total / limit) if limit else 1
+        pagination = DTOPagination(
+            total=total,
+            page=page,
+            limit=limit,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1 and total > 0,
+        )
+        return {"items": items, **pagination.model_dump()}
+
     def list(self, page: int = 1, limit: int = 20, include_deleted: bool = False) -> dict[str, Any]:
         total = self.repository.count(include_deleted=include_deleted)
-        items = self.repository.find_all(
+        rows = self.repository.find_all(
             offset=(page - 1) * limit, limit=limit, include_deleted=include_deleted
         )
-        total_pages = ceil(total / limit) if limit else 1
-        return {
-            "items": [self._to_dto(i) for i in items],
-            "pagination": DTOPagination(
-                total=total,
-                page=page,
-                limit=limit,
-                total_pages=total_pages,
-                has_next=page < total_pages,
-                has_prev=page > 1 and total > 0,
-            ),
-        }
+        return self._page([self._to_dto(r) for r in rows], total, page, limit)
 
     def create(self, dto: C, current_user_id: UUID | None = None) -> R:
         entity = self.repository.model(**dto.model_dump(exclude_unset=True))
@@ -154,18 +157,12 @@ class ServiceBase[
         include_deleted: bool = True,
     ) -> dict[str, Any]:
         total = self.repository.count(include_deleted=include_deleted)
-        items = self.repository.find_all(
+        rows = self.repository.find_all(
             offset=(page - 1) * limit, limit=limit, include_deleted=include_deleted
         )
-        total_pages = ceil(total / limit) if limit else 1
-        return {
-            "items": [audit_schema.model_validate(i, from_attributes=True) for i in items],
-            "pagination": DTOPagination(
-                total=total,
-                page=page,
-                limit=limit,
-                total_pages=total_pages,
-                has_next=page < total_pages,
-                has_prev=page > 1 and total > 0,
-            ),
-        }
+        return self._page(
+            [audit_schema.model_validate(r, from_attributes=True) for r in rows],
+            total,
+            page,
+            limit,
+        )

@@ -12,6 +12,7 @@ from app.dependencies import (
 )
 from app.enum.permission_action import EnumPermissionAction
 from app.models.user import User
+from app.schemas.base import PaginatedResponse
 from app.schemas.user import (
     UserRequest,
     UserRequestWithoutPassword,
@@ -23,14 +24,14 @@ from app.services.user import ServiceUser
 user = APIRouter(prefix="/user", tags=["User"])
 
 
-@user.get("/audit", response_model=list[UserResponseAudit])
+@user.get("/audit", response_model=PaginatedResponse[UserResponseAudit])
 def find_all_audit(
     _: AdminUser,
     db: DbSession,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
 ):
-    return ServiceUser(db).list_audit(UserResponseAudit, page=page, limit=limit)["items"]
+    return ServiceUser(db).list_audit(UserResponseAudit, page=page, limit=limit)
 
 
 @user.get("/audit/{user_id}", response_model=UserResponseAudit)
@@ -51,14 +52,14 @@ def create(
     return ServiceUser(db).create(request, current_user_id=current_user.id)
 
 
-@user.get("", response_model=list[UserResponse])
+@user.get("", response_model=PaginatedResponse[UserResponse])
 def find_all(
     _: Annotated[User, Depends(require_permission(EnumPermissionAction.READ_USER))],
     db: DbSession,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
 ):
-    return ServiceUser(db).list(page=page, limit=limit)["items"]
+    return ServiceUser(db).list(page=page, limit=limit)
 
 
 @user.get("/{user_id}", response_model=UserResponse)

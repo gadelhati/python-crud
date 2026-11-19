@@ -7,20 +7,21 @@ from fastapi import APIRouter, Depends, Query, status
 from app.dependencies import AdminUser, DbSession, require_permission
 from app.enum.permission_action import EnumPermissionAction
 from app.models.user import User
+from app.schemas.base import PaginatedResponse
 from app.schemas.role import RoleRequest, RoleResponse, RoleResponseAudit
 from app.services.role import ServiceRole
 
 role = APIRouter(prefix="/role", tags=["Role"])
 
 
-@role.get("/audit", response_model=list[RoleResponseAudit])
+@role.get("/audit", response_model=PaginatedResponse[RoleResponseAudit])
 def find_all_audit(
     _: AdminUser,
     db: DbSession,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
 ):
-    return ServiceRole(db).list_audit(RoleResponseAudit, page=page, limit=limit)["items"]
+    return ServiceRole(db).list_audit(RoleResponseAudit, page=page, limit=limit)
 
 
 @role.get("/audit/{role_id}", response_model=RoleResponseAudit)
@@ -41,14 +42,14 @@ def create(
     return ServiceRole(db).create(request, current_user_id=current_user.id)
 
 
-@role.get("", response_model=list[RoleResponse])
+@role.get("", response_model=PaginatedResponse[RoleResponseAudit])
 def find_all(
     _: Annotated[User, Depends(require_permission(EnumPermissionAction.READ_ROLE))],
     db: DbSession,
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
 ):
-    return ServiceRole(db).list(page=page, limit=limit)["items"]
+    return ServiceRole(db).list(page=page, limit=limit)
 
 
 @role.get("/defaults", response_model=list[RoleResponse])
