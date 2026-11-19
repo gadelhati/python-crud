@@ -13,17 +13,10 @@ from sqlalchemy.orm import Session
 from app.models.base import EntityBase
 from app.repositories.base import SoftDeleteRepository
 from app.schemas.base import DTOPagination
+from app.services.database_errors import DatabaseErrorMapper
+from app.services.errors import ServiceError
 
 logger = logging.getLogger(__name__)
-
-
-class ServiceError(Exception):
-    """Generic error in the service layer."""
-
-    def __init__(self, message: str, code: str = "service_error") -> None:
-        self.message = message
-        self.code = code
-        super().__init__(message)
 
 
 class ServiceBase[
@@ -112,7 +105,7 @@ class ServiceBase[
         try:
             self.repository.save(entity)
         except SQLAlchemyError as e:
-            raise ServiceError(f"Error creating {self._name()}", code="integrity_error") from e
+            raise DatabaseErrorMapper.map_database_error(e, self._name(), operation="create") from e
         return self._to_dto(entity)
 
     def update(self, id: UUID, dto: U, current_user_id: UUID | None = None) -> R:
@@ -123,7 +116,7 @@ class ServiceBase[
         try:
             self.repository.save(entity)
         except SQLAlchemyError as e:
-            raise ServiceError(f"Error updating {self._name()}", code="integrity_error") from e
+            raise DatabaseErrorMapper.map_database_error(e, self._name(), operation="update") from e
         return self._to_dto(entity)
 
     def delete(self, id: UUID) -> bool:
