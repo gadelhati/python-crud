@@ -14,8 +14,8 @@ from app.enum.permission_action import EnumPermissionAction
 from app.models.user import User
 from app.schemas.base import PaginatedResponse
 from app.schemas.user import (
+    UserPasswordRequest,
     UserRequest,
-    UserRequestWithoutPassword,
     UserResponse,
     UserResponseAudit,
 )
@@ -45,7 +45,7 @@ def find_by_id_audit(
 
 @user.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create(
-    request: UserRequest,
+    request: UserPasswordRequest,
     db: DbSession,
     current_user: Annotated[User, Depends(require_permission(EnumPermissionAction.CREATE_USER))],
 ):
@@ -74,7 +74,7 @@ def find_by_id(
 @user.put("/{user_id}", response_model=UserResponse)
 def update(
     user_id: UUID,
-    request: UserRequestWithoutPassword,
+    request: UserRequest,
     current_user: Annotated[
         User, Depends(require_self_or_permission(EnumPermissionAction.UPDATE_USER))
     ],

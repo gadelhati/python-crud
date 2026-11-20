@@ -21,7 +21,7 @@ class RoleBase(SchemaBase):
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
-        result = RoleValidation.validate_name(v, "Role name")
+        result = RoleValidation.validate_text(v, "Role name")
         if result is None:
             raise ValueError("Role name is required")
         return result
@@ -29,7 +29,7 @@ class RoleBase(SchemaBase):
     @field_validator("description")
     @classmethod
     def validate_description(cls, v: str | None) -> str | None:
-        return RoleValidation.validate_name(v, "Description")
+        return RoleValidation.validate_text(v, "Description")
 
 
 class RoleRequest(RoleBase):

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import EmailStr, Field, field_validator
+from pydantic import ConfigDict, EmailStr, Field, field_validator
 
 from app.schemas.base import SchemaAudit, SchemaBase, SchemaId
 from app.schemas.role import RoleResponse
@@ -14,13 +14,23 @@ class UserBase(SchemaBase):
     """Base schema for user attributes."""
 
     username: str = Field(
-        min_length=UserValidation.USERNAME_MIN_LENGTH, max_length=UserValidation.USERNAME_MAX_LENGTH
+        min_length=UserValidation.USERNAME_MIN_LENGTH,
+        max_length=UserValidation.USERNAME_MAX_LENGTH,
     )
     email: EmailStr = Field(
-        min_length=UserValidation.EMAIL_MIN_LENGTH, max_length=UserValidation.EMAIL_MAX_LENGTH
+        min_length=UserValidation.EMAIL_MIN_LENGTH,
+        max_length=UserValidation.EMAIL_MAX_LENGTH,
     )
-    first_name: str | None = Field(default=None, max_length=UserValidation.NAME_MAX_LENGTH)
-    last_name: str | None = Field(default=None, max_length=UserValidation.NAME_MAX_LENGTH)
+    first_name: str | None = Field(
+        default=None,
+        min_length=UserValidation.NAME_MIN_LENGTH,
+        max_length=UserValidation.NAME_MAX_LENGTH,
+    )
+    last_name: str | None = Field(
+        default=None,
+        min_length=UserValidation.NAME_MIN_LENGTH,
+        max_length=UserValidation.NAME_MAX_LENGTH,
+    )
 
     @field_validator("username")
     @classmethod
@@ -30,27 +40,16 @@ class UserBase(SchemaBase):
     @field_validator("first_name", "last_name")
     @classmethod
     def validate_names(cls, v: str | None, info) -> str | None:
-        return UserValidation.validate_name(v, info.field_name.replace("_", " ").title())
+        return UserValidation.validate_names(v, info.field_name.replace("_", " ").title())
 
 
-class UserRequestWithoutPassword(UserBase):
+class UserRequest(UserBase):
     """Schema for user creation and update requests without password."""
 
     is_active: bool = True
-    role_ids: list[UUID] | None = Field(
-        default=None,
-        max_length=UserValidation.MAX_ROLES_PER_USER,
-    )
-
-    @field_validator("role_ids")
-    @classmethod
-    def validate_role_ids(cls, v: list[UUID] | None) -> list[UUID] | None:
-        if v is not None and len(v) != len(set(v)):
-            raise ValueError("Duplicate roles not allowed")
-        return v
 
 
-class UserRequest(UserRequestWithoutPassword):
+class UserPasswordRequest(SchemaBase):
     """Schema for user creation and update requests."""
 
     password: str = Field(
@@ -65,6 +64,28 @@ class UserRequest(UserRequestWithoutPassword):
             return UserValidation.validate_password(v)
         return v
 
+    model_config = ConfigDict(
+        from_attributes=True,
+        str_strip_whitespace=False,
+        validate_assignment=True,
+    )
+
+class UserRoleRequest(SchemaBase):
+    """Schema for user creation and update requests without password."""
+
+    role_ids: list[UUID] | None = Field(
+        default=None,
+        min_length=UserValidation.MIN_ROLES_PER_USER,
+        max_length=UserValidation.MAX_ROLES_PER_USER,
+    )
+
+    @field_validator("role_ids")
+    @classmethod
+    def validate_role_ids(cls, v: list[UUID] | None) -> list[UUID] | None:
+        if v is not None and len(v) != len(set(v)):
+            raise ValueError("Duplicate roles not allowed")
+        return v
+
 
 class UserResponse(UserBase, SchemaId):
     """Schema for user responses."""
@@ -75,10 +96,5 @@ class UserResponse(UserBase, SchemaId):
     roles: list[RoleResponse] = Field(default_factory=list)
 
 
-class UserResponseAudit(UserBase, SchemaAudit):
+class UserResponseAudit(UserResponse, SchemaAudit):
     """Schema for user responses with audiction."""
-
-    is_active: bool
-    is_verified: bool
-    last_login: datetime | None = None
-    roles: list[RoleResponse] = Field(default_factory=list)

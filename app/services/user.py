@@ -11,7 +11,7 @@ from app.models.role import Role
 from app.models.user import User
 from app.repositories.role import RoleRepository
 from app.repositories.user import UserRepository
-from app.schemas.user import UserRequest, UserRequestWithoutPassword, UserResponse
+from app.schemas.user import UserPasswordRequest, UserRequest, UserResponse
 from app.services.base import ServiceBase, ServiceError
 from app.services.password import hash_password
 from app.validations.user import UserValidation
@@ -19,7 +19,7 @@ from app.validations.user import UserValidation
 logger = logging.getLogger(__name__)
 
 
-class ServiceUser(ServiceBase[User, UserRequest, UserRequestWithoutPassword, UserResponse]):
+class ServiceUser(ServiceBase[User, UserPasswordRequest, UserRequest, UserResponse]):
     """User service with user-specific rules."""
 
     def __init__(self, db: Session) -> None:
@@ -33,7 +33,7 @@ class ServiceUser(ServiceBase[User, UserRequest, UserRequestWithoutPassword, Use
         self._check_found(roles, role_ids, "roles")
         return list(roles)
 
-    def create(self, dto: UserRequest, current_user_id: UUID | None = None) -> UserResponse:
+    def create(self, dto: UserPasswordRequest, current_user_id: UUID | None = None) -> UserResponse:
         if self.users.find_by_username(dto.username, include_deleted=True) is not None:
             raise ServiceError("Username already registered", code="conflict")
         if self.users.find_by_email(dto.email, include_deleted=True) is not None:
@@ -52,7 +52,7 @@ class ServiceUser(ServiceBase[User, UserRequest, UserRequestWithoutPassword, Use
         return self._to_dto(user)
 
     def update(
-        self, id: UUID, dto: UserRequestWithoutPassword, current_user_id: UUID | None = None
+        self, id: UUID, dto: UserRequest, current_user_id: UUID | None = None
     ) -> UserResponse:
         user = self._get_or_404(id)
         data = dto.model_dump(exclude_unset=True, exclude={"password", "role_ids"})
@@ -132,7 +132,7 @@ class ServiceUser(ServiceBase[User, UserRequest, UserRequestWithoutPassword, Use
             "is_verified": user.is_verified,
         }
 
-    def create_first_user(self, data: UserRequest) -> UserResponse:
+    def create_first_user(self, data: UserPasswordRequest) -> UserResponse:
         """Creates the first admin user. Transaction commit handled by get_db() dependency."""
         if self.repository.count() > 0:
             raise ServiceError("First user already exists.", "conflict")

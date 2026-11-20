@@ -4,6 +4,7 @@ from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
+from typing import Any
 
 from app.validations.user import UserValidation
 
@@ -57,11 +58,11 @@ class PaginatedResponse[T](DTOPagination):
     items: list[T] = Field(description="List of items for the current page")
 
 
-class ValidationError(SchemaBase):
+class FieldError(SchemaBase):
     """Schema for validation error details."""
 
     field: str
-    rejected_value: str
+    rejected_value: Any | None
     message: str
 
 
@@ -71,7 +72,7 @@ class ResponseError(SchemaBase):
     code: int
     status: str
     message: str
-    validation_errors: list[ValidationError] | None = None
+    validation_errors: list[FieldError] | None = None
 
 
 class SchemaSwagger(SchemaBase):

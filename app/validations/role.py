@@ -14,7 +14,7 @@ class RoleValidation:
     MAX_PERMISSIONS_PER_ROLE = 50
 
     @staticmethod
-    def validate_name(v: str | None, field_name: str = "Role name") -> str | None:
+    def validate_text(v: str | None, field_name: str = "Role name") -> str | None:
         """Normalize a role field and reject non-null blank values."""
         if v is None:
             return None

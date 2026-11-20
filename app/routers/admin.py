@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request, status
 from app.config import settings
 from app.dependencies import DbSession
 from app.rate_limit import limiter
-from app.schemas.user import UserRequest, UserResponse
+from app.schemas.user import UserPasswordRequest, UserResponse
 from app.services.permission import ServicePermission
 from app.services.user import ServiceUser
 
@@ -19,7 +19,7 @@ admin = APIRouter(prefix="/admin", tags=["Admin"])
 @limiter.limit(settings.rate_limit_bootstrap)
 def create_first_user(
     request: Request,
-    payload: UserRequest,
+    payload: UserPasswordRequest,
     db: DbSession,
 ) -> UserResponse:
     ServicePermission(db).sync_with_enum()
