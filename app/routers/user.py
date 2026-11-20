@@ -15,7 +15,6 @@ from app.models.user import User
 from app.schemas.base import PaginatedResponse
 from app.schemas.user import (
     UserCreateRequest,
-    UserPasswordRequest,
     UserRequest,
     UserResponse,
     UserResponseAudit,
