@@ -88,6 +88,10 @@ class UserRoleRequest(SchemaBase):
         return v
 
 
+class UserCreateRequest(UserRequest, UserPasswordRequest, UserRoleRequest):
+    """Schema for user creation requests with all fields."""
+
+
 class UserResponse(UserBase, SchemaId):
     """Schema for user responses."""
 
