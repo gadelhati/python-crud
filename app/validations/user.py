@@ -70,8 +70,12 @@ class UserValidation:
         field_name: str,
     ) -> list:
         if len(values) < UserValidation.MIN_ROLES_PER_USER:
-            raise ValueError(f"{field_name} must contain at least {UserValidation.MIN_ROLES_PER_USER} items")
+            raise ValueError(
+                f"{field_name} must contain at least {UserValidation.MIN_ROLES_PER_USER} items"
+            )
         if len(values) > UserValidation.MAX_ROLES_PER_USER:
-            raise ValueError(f"{field_name} must contain at most {UserValidation.MAX_ROLES_PER_USER} items")
+            raise ValueError(
+                f"{field_name} must contain at most {UserValidation.MAX_ROLES_PER_USER} items"
+            )
 
         return values

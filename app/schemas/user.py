@@ -70,6 +70,7 @@ class UserPasswordRequest(SchemaBase):
         validate_assignment=True,
     )
 
+
 class UserRoleRequest(SchemaBase):
     """Schema for user creation and update requests without password."""
 
