@@ -42,7 +42,7 @@ def create(
     return ServiceRole(db).create(request, current_user_id=current_user.id)
 
 
-@role.get("", response_model=PaginatedResponse[RoleResponseAudit])
+@role.get("", response_model=PaginatedResponse[RoleResponse])
 def find_all(
     _: Annotated[User, Depends(require_permission(EnumPermissionAction.READ_ROLE))],
     db: DbSession,
