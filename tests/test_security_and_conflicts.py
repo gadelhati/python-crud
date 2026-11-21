@@ -195,3 +195,27 @@ def test_access_and_refresh_tokens_are_not_interchangeable() -> None:
 
     with pytest.raises(ServiceError, match="Invalid token"):
         decode_refresh_token(access_token)
+
+
+def test_list_roles_returns_paginated_response(
+    client: TestClient,
+    auth_headers: dict[str, str],
+) -> None:
+    response = client.get("/role", headers=auth_headers)
+
+    assert response.status_code == 200, response.json()
+
+    data = response.json()
+
+    assert isinstance(data["items"], list)
+    assert "total" in data
+    assert "page" in data
+    assert "limit" in data
+    assert "total_pages" in data
+    assert "has_next" in data
+    assert "has_prev" in data
+
+    if data["items"]:
+        assert "id" in data["items"][0]
+        assert "name" in data["items"][0]
+        assert "permissions" in data["items"][0]
