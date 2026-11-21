@@ -67,6 +67,7 @@ def test_expired_and_malformed_tokens_return_401(client: TestClient) -> None:
         "sub": str(uuid4()),
         "jti": str(uuid4()),
         "exp": datetime.now(UTC) - timedelta(minutes=5),
+        "token_type": "access",
     }
     expired_token = jwt.encode(
         expired_payload,
