@@ -192,8 +192,8 @@ def test_regular_user_cannot_modify_or_delete_other_users(
     assert res_a.status_code == 201
     assert res_b.status_code == 201
 
-    # user_a_id = res_a.json()["id"]
-    # user_b_id = res_b.json()["id"]
+    user_a_id = res_a.json()["id"]
+    user_b_id = res_b.json()["id"]
 
     headers_a = authentication_headers(
         client, user_a_payload["username"], user_a_payload["password"]
@@ -211,7 +211,16 @@ def test_regular_user_cannot_modify_or_delete_other_users(
     )
     assert create_forbidden.status_code == 403
 
-    # 2. User A tries to edit User B (requires SelfOrAdminUser -> 403)
+    # Cleanup
+    assert client.delete(
+        f"/user/{user_a_id}/hard",
+        headers=auth_headers,
+    ).status_code == 204
+
+    assert client.delete(
+        f"/user/{user_b_id}/hard",
+        headers=auth_headers,
+    ).status_code == 204
 
 
 def test_login_lockout_unlock_and_refresh_token(
