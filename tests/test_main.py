@@ -212,15 +212,21 @@ def test_regular_user_cannot_modify_or_delete_other_users(
     assert create_forbidden.status_code == 403
 
     # Cleanup
-    assert client.delete(
-        f"/user/{user_a_id}/hard",
-        headers=auth_headers,
-    ).status_code == 204
+    assert (
+        client.delete(
+            f"/user/{user_a_id}/hard",
+            headers=auth_headers,
+        ).status_code
+        == 204
+    )
 
-    assert client.delete(
-        f"/user/{user_b_id}/hard",
-        headers=auth_headers,
-    ).status_code == 204
+    assert (
+        client.delete(
+            f"/user/{user_b_id}/hard",
+            headers=auth_headers,
+        ).status_code
+        == 204
+    )
 
 
 def test_login_lockout_unlock_and_refresh_token(
