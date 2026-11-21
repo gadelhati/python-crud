@@ -14,6 +14,7 @@ from app.repositories.user import UserRepository
 from app.schemas.user import UserPasswordRequest, UserRequest, UserResponse
 from app.services.base import ServiceBase, ServiceError
 from app.services.password import hash_password
+from app.services.permission_policy import PermissionPolicy
 from app.validations.user import UserValidation
 
 logger = logging.getLogger(__name__)
@@ -42,10 +43,15 @@ class ServiceUser(ServiceBase[User, UserPasswordRequest, UserRequest, UserRespon
         data = dto.model_dump(exclude_unset=True, exclude={"password", "role_ids"})
         user = User(**data, password=hash_password(dto.password))
 
-        if dto.role_ids:
-            user.roles = self._resolve_roles(dto.role_ids)
-        else:
-            user.roles = self.roles.find_defaults()
+        roles = self._resolve_roles(dto.role_ids) if dto.role_ids else self.roles.find_defaults()
+
+        PermissionPolicy.ensure_can_assign_roles(
+            self.db,
+            current_user_id,
+            roles,
+        )
+
+        user.roles = roles
 
         self._stamp(user, current_user_id, created=True)
         self.users.save(user)
@@ -75,7 +81,15 @@ class ServiceUser(ServiceBase[User, UserPasswordRequest, UserRequest, UserRespon
             setattr(user, field, value)
 
         if "role_ids" in dto.model_fields_set:
-            user.roles = self._resolve_roles(dto.role_ids) if dto.role_ids else []
+            roles = self._resolve_roles(dto.role_ids) if dto.role_ids else []
+
+            PermissionPolicy.ensure_can_assign_roles(
+                self.db,
+                current_user_id,
+                roles,
+            )
+
+            user.roles = roles
 
         self._stamp(user, current_user_id)
         self.users.save(user)
@@ -93,7 +107,15 @@ class ServiceUser(ServiceBase[User, UserPasswordRequest, UserRequest, UserRespon
         self, user_id: UUID, role_ids: list[UUID], current_user_id: UUID | None = None
     ) -> UserResponse:
         user = self._get_or_404(user_id)
-        user.roles = self._resolve_roles(role_ids)
+        roles = self._resolve_roles(role_ids)
+
+        PermissionPolicy.ensure_can_assign_roles(
+            self.db,
+            current_user_id,
+            roles,
+        )
+
+        user.roles = roles
         self._stamp(user, current_user_id)
         self.users.save(user)
         return self._to_dto(user)
