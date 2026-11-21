@@ -10,6 +10,12 @@ from app.config import settings
 from app.database import SessionLocal
 from app.models.user import User
 from app.services.base import ServiceError
+from app.services.token import (
+    create_access_token,
+    create_refresh_token,
+    decode_access_token,
+    decode_refresh_token,
+)
 from app.services.user import ServiceUser
 from tests.conftest import authentication_headers
 
@@ -169,3 +175,22 @@ def test_deactivated_user_access_token_is_immediately_rejected(
 
     # Limpeza
     assert client.delete(f"/user/{user_id}/hard", headers=auth_headers).status_code == 204
+
+
+def test_access_and_refresh_tokens_are_not_interchangeable() -> None:
+    """Access and refresh tokens must only be accepted for their own purpose."""
+    user_id = uuid4()
+
+    access_token = create_access_token(user_id)
+    refresh_token = create_refresh_token(user_id)
+
+    # Cada token deve ser aceito pelo seu próprio decodificador.
+    assert decode_access_token(access_token) == user_id
+    assert decode_refresh_token(refresh_token)[0] == user_id
+
+    # Um token não pode ser utilizado na finalidade do outro.
+    with pytest.raises(ServiceError, match="Invalid token"):
+        decode_access_token(refresh_token)
+
+    with pytest.raises(ServiceError, match="Invalid token"):
+        decode_refresh_token(access_token)

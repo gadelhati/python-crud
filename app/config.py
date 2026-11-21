@@ -17,8 +17,8 @@ class Settings(BaseSettings):
     reload: bool = False
     jwt_secret_key: SecretStr = Field(min_length=32)
     jwt_access_token_expire_minutes: int = Field(default=30, gt=0)
-    jwt_refresh_secret_key: SecretStr | None = None
-    jwt_refresh_token_expire_minutes: int = 60 * 24 * 7
+    jwt_refresh_secret_key: SecretStr = Field(min_length=32)
+    jwt_refresh_token_expire_minutes: int = Field(default=60 * 24 * 7, gt=0)
     database_url: str = Field(min_length=1)
     rate_limit_storage_uri: str = "memory://"
     rate_limit_login: str = "10/minute"
@@ -26,9 +26,9 @@ class Settings(BaseSettings):
     rate_limit_bootstrap: str = "3/minute"
 
     @model_validator(mode="after")
-    def set_default_refresh_secret(self) -> "Settings":
-        if self.jwt_refresh_secret_key is None:
-            self.jwt_refresh_secret_key = self.jwt_secret_key
+    def validate_jwt_secrets(self) -> "Settings":
+        if self.jwt_secret_key.get_secret_value() == self.jwt_refresh_secret_key.get_secret_value():
+            raise ValueError("JWT access and refresh secrets must be different")
         return self
 
     model_config = SettingsConfigDict(
