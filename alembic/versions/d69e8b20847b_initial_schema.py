@@ -238,3 +238,22 @@ def downgrade() -> None:
 
     op.drop_table("permissions")
     # ### end Alembic commands ###
+
+    sa.Enum(
+        "create:user",
+        "read:user",
+        "update:user",
+        "delete:user",
+        "execute:user",
+        "create:role",
+        "read:role",
+        "update:role",
+        "delete:role",
+        "execute:role",
+        "create:permission",
+        "read:permission",
+        "update:permission",
+        "delete:permission",
+        "execute:permission",
+        name="enum_permission_action",
+    ).drop(op.get_bind(), checkfirst=True)
