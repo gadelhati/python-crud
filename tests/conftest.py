@@ -1,29 +1,12 @@
 
+# tests/conftest.py
+
 import os
 from collections.abc import Generator
-from pathlib import Path
 from uuid import uuid4
 
-from sqlalchemy.engine import make_url
-
-TEST_DATABASE_NAME = "python_crud_test.sqlite3"
-TEST_DATABASE_URL = f"sqlite:///{TEST_DATABASE_NAME}"
-
-configured_database_url = os.getenv("UVICORN_DATABASE_URL")
-
-if configured_database_url:
-    database_url = make_url(configured_database_url)
-
-    if (
-        database_url.get_backend_name() != "sqlite"
-        or Path(database_url.database or "").name != TEST_DATABASE_NAME
-    ):
-        raise RuntimeError(
-            "Tests can only run against the dedicated SQLite test database "
-            f"'{TEST_DATABASE_NAME}'."
-        )
-else:
-    os.environ["UVICORN_DATABASE_URL"] = TEST_DATABASE_URL
+# Force SQLite as the test database before importing the application.
+os.environ["UVICORN_DATABASE_URL"] = "sqlite:///./db_test.sqlite3"
 
 os.environ.setdefault(
     "UVICORN_JWT_SECRET_KEY",
@@ -73,7 +56,7 @@ def reset_rate_limiter() -> None:
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_database() -> Generator[None]:
-    """Create and clean application tables in the dedicated test database."""
+    """Create and clean application tables in the test database."""
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
@@ -111,6 +94,7 @@ def auth_headers(client: TestClient) -> Generator[dict[str, str]]:
 
     with SessionLocal() as db:
         admin_role = db.query(Role).filter(Role.name == "admin").first()
+
         if admin_role is None:
             admin_role = Role(
                 name="admin",
@@ -138,6 +122,7 @@ def auth_headers(client: TestClient) -> Generator[dict[str, str]]:
 
     with SessionLocal() as db:
         stored_admin = db.get(User, admin_id)
+
         if stored_admin is not None:
             db.delete(stored_admin)
             db.commit()
