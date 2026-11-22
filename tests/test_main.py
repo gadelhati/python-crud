@@ -12,10 +12,24 @@ os.environ.setdefault(
 )
 
 from fastapi.testclient import TestClient
+from sqlalchemy.engine import make_url
 
 from app.database import SessionLocal
 from app.models.user import User
 from tests.conftest import authentication_headers
+
+
+def assert_test_database(database_url: str) -> None:
+    url = make_url(database_url)
+
+    if url.get_backend_name() == "sqlite":
+        return
+
+    if url.get_backend_name() != "postgresql":
+        raise RuntimeError("Unsupported test database")
+
+    if url.database != "python_crud_test":
+        raise RuntimeError("Tests can only run against the dedicated test database")
 
 
 def test_application_initializes(client: TestClient) -> None:

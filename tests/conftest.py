@@ -15,6 +15,7 @@ os.environ.setdefault(
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from app.database import SessionLocal, engine
 from app.main import app
@@ -29,6 +30,24 @@ def _reset_postgres_schema() -> None:
     with engine.begin() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE"))
         conn.execute(text("CREATE SCHEMA public"))
+
+
+@pytest.fixture
+def db_session():
+    connection = engine.connect()
+    transaction = connection.begin()
+
+    session = Session(
+        bind=connection,
+        join_transaction_mode="create_savepoint",
+    )
+
+    try:
+        yield session
+    finally:
+        session.close()
+        transaction.rollback()
+        connection.close()
 
 
 @pytest.fixture(autouse=True)
