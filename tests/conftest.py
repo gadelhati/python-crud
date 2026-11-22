@@ -1,8 +1,30 @@
+
 import os
 from collections.abc import Generator
+from pathlib import Path
 from uuid import uuid4
 
-os.environ.setdefault("UVICORN_DATABASE_URL", "sqlite:///./db_test.sqlite3")
+from sqlalchemy.engine import make_url
+
+TEST_DATABASE_NAME = "python_crud_test.sqlite3"
+TEST_DATABASE_URL = f"sqlite:///{TEST_DATABASE_NAME}"
+
+configured_database_url = os.getenv("UVICORN_DATABASE_URL")
+
+if configured_database_url:
+    database_url = make_url(configured_database_url)
+
+    if (
+        database_url.get_backend_name() != "sqlite"
+        or Path(database_url.database or "").name != TEST_DATABASE_NAME
+    ):
+        raise RuntimeError(
+            "Tests can only run against the dedicated SQLite test database "
+            f"'{TEST_DATABASE_NAME}'."
+        )
+else:
+    os.environ["UVICORN_DATABASE_URL"] = TEST_DATABASE_URL
+
 os.environ.setdefault(
     "UVICORN_JWT_SECRET_KEY",
     "test-secret-key-with-at-least-thirty-two-characters",
@@ -14,7 +36,6 @@ os.environ.setdefault(
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal, engine
@@ -24,12 +45,6 @@ from app.models.role import Role
 from app.models.user import User
 from app.rate_limit import limiter
 from app.services.password import hash_password
-
-
-def _reset_postgres_schema() -> None:
-    with engine.begin() as conn:
-        conn.execute(text("DROP SCHEMA public CASCADE"))
-        conn.execute(text("CREATE SCHEMA public"))
 
 
 @pytest.fixture
@@ -52,23 +67,19 @@ def db_session():
 
 @pytest.fixture(autouse=True)
 def reset_rate_limiter() -> None:
-    """Limpa os contadores do SlowAPI entre testes para evitar 429 cruzado."""
+    """Reset SlowAPI counters between tests to prevent cross-test 429s."""
     limiter.reset()
 
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_database() -> Generator[None]:
-    is_pg = engine.dialect.name == "postgresql"
-    if is_pg:
-        _reset_postgres_schema()
-    else:
-        Base.metadata.drop_all(bind=engine)
+    """Create and clean application tables in the dedicated test database."""
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
+
     yield
-    if is_pg:
-        _reset_postgres_schema()
-    else:
-        Base.metadata.drop_all(bind=engine)
+
+    Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture
@@ -93,7 +104,7 @@ def authentication_headers(
 
 @pytest.fixture
 def auth_headers(client: TestClient) -> Generator[dict[str, str]]:
-    """Cria um usuário administrador no banco para autenticar requisições administrativas."""
+    """Create an administrator user for authenticated administrative requests."""
     unique_suffix = uuid4().hex[:8]
     username = f"seed_admin_{unique_suffix}"
     password = "SeedAdminPassword123!"
