@@ -117,3 +117,19 @@ class PermissionPolicy:
                 "Cannot manage a role containing permissions you do not possess",
                 code="forbidden",
             )
+
+    @classmethod
+    def ensure_can_change_default_status(
+        cls,
+        db,
+        actor_id: UUID | None,
+    ) -> None:
+        """Ensures only administrators can change a role's default status."""
+
+        actor_permissions = cls._get_actor_permissions(db, actor_id)
+
+        if actor_permissions is not None:
+            raise ServiceError(
+                "Only administrators can change the default status of roles",
+                code="forbidden",
+            )

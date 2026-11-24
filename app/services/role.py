@@ -43,6 +43,12 @@ class ServiceRole(ServiceBase[Role, RoleRequest, RoleRequest, RoleResponse]):
                 code="conflict",
             )
 
+        if dto.is_default:
+            PermissionPolicy.ensure_can_change_default_status(
+                self.db,
+                current_user_id,
+            )
+
         permissions = self._resolve_permissions(dto.permission_ids) if dto.permission_ids else []
 
         PermissionPolicy.ensure_can_grant_permissions(
@@ -71,6 +77,12 @@ class ServiceRole(ServiceBase[Role, RoleRequest, RoleRequest, RoleResponse]):
         )
 
         data = dto.model_dump(exclude_unset=True, exclude={"permission_ids"})
+
+        if "is_default" in data and data["is_default"] != role.is_default:
+            PermissionPolicy.ensure_can_change_default_status(
+                self.db,
+                current_user_id,
+            )
 
         if "name" in data and data["name"].casefold() == "admin":
             raise ServiceError(
