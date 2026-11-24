@@ -27,6 +27,9 @@ dev = [
     "ruff>=0.8.0,<1.0.0",
     "build>=1.2.0,<2.0.0",
 ]
+performance = [
+    "locust>=2.32.0,<3.0.0",
+]
 
 [tool.setuptools.packages.find]
 include = ["app*"]
@@ -63,3 +66,13 @@ select = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+    "unit: isolated unit tests",
+    "integration: tests integrating API, services, and persistence",
+    "e2e: end-to-end application workflows",
+    "security: authentication, authorization, and abuse-resistance tests",
+    "concurrency: simultaneous operations and transaction-race tests",
+    "postgresql: requires PostgreSQL-specific transaction semantics",
+    "performance: load/performance tests; normally executed with Locust",
+]
