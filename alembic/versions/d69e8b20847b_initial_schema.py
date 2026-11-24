@@ -103,6 +103,46 @@ def upgrade() -> None:
             unique=True,
         )
 
+    # Store the bootstrap state independently from the users table.
+    op.create_table(
+        "system_state",
+        sa.Column("id", sa.Integer(), nullable=False),
+        sa.Column(
+            "bootstrap_completed",
+            sa.Boolean(),
+            server_default=sa.false(),
+            nullable=False,
+        ),
+        sa.CheckConstraint(
+            "id = 1",
+            name="ck_system_state_singleton",
+        ),
+        sa.PrimaryKeyConstraint("id"),
+    )
+
+    system_state = sa.table(
+        "system_state",
+        sa.column("id", sa.Integer()),
+        sa.column("bootstrap_completed", sa.Boolean()),
+    )
+
+    op.bulk_insert(
+        system_state,
+        [{"id": 1, "bootstrap_completed": False}],
+    )
+
+    # Existing installations must not be allowed to bootstrap again.
+    op.execute(
+        sa.text(
+            """
+            UPDATE system_state
+            SET bootstrap_completed = TRUE
+            WHERE id = 1
+              AND EXISTS (SELECT 1 FROM users)
+            """
+        )
+    )
+
     op.create_table(
         "roles",
         sa.Column("name", sa.String(length=100), nullable=False),
@@ -309,6 +349,9 @@ def downgrade() -> None:
     # users, roles, and permissions.
     op.drop_table("user_roles")
     op.drop_table("role_permissions")
+
+    # Drop bootstrap state before dropping the users table.
+    op.drop_table("system_state")
 
     with op.batch_alter_table("permissions", schema=None) as batch_op:
         batch_op.drop_index(batch_op.f("ix_permissions_name"))

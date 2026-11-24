@@ -5,9 +5,11 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.models.role import Role
+from app.models.system_state import SystemState
 from app.models.user import User
 from app.repositories.role import RoleRepository
 from app.repositories.user import UserRepository
@@ -155,11 +157,28 @@ class ServiceUser(ServiceBase[User, UserPasswordRequest, UserRequest, UserRespon
         }
 
     def create_first_user(self, data: UserPasswordRequest) -> UserResponse:
-        """Creates the first admin user. Transaction commit handled by get_db() dependency."""
-        if self.repository.count() > 0:
-            raise ServiceError("First user already exists.", "conflict")
+        """Creates the first admin user atomically."""
+
+        # Atomically claim the bootstrap operation.
+        result = self.db.execute(
+            update(SystemState)
+            .where(
+                SystemState.id == 1,
+                SystemState.bootstrap_completed.is_(False),
+            )
+            .values(bootstrap_completed=True)
+            .execution_options(synchronize_session=False)
+        )
+
+        # No row updated means bootstrap is already completed or claimed.
+        if result.rowcount != 1:
+            raise ServiceError(
+                "First user already exists.",
+                "conflict",
+            )
 
         admin_role = self.db.query(Role).filter(Role.name == "admin").first()
+
         if admin_role is None:
             admin_role = Role(
                 name="admin",
@@ -178,7 +197,12 @@ class ServiceUser(ServiceBase[User, UserPasswordRequest, UserRequest, UserRespon
             last_name=data.last_name,
             roles=[admin_role],
         )
+
         self.db.add(user)
         self.db.flush()
         self.db.refresh(user)
-        return UserResponse.model_validate(user, from_attributes=True)
+
+        return UserResponse.model_validate(
+            user,
+            from_attributes=True,
+        )

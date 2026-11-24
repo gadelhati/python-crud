@@ -4,6 +4,7 @@ from app.models.join import role_permissions, user_roles
 from app.models.permission import Permission
 from app.models.revoked_token import RevokedToken
 from app.models.role import Role
+from app.models.system_state import SystemState
 from app.models.user import User
 
 __all__ = [
@@ -14,5 +15,6 @@ __all__ = [
     "Role",
     "User",
     "role_permissions",
+    "SystemState",
     "user_roles",
 ]

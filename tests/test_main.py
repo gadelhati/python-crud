@@ -1,6 +1,8 @@
 import os
 from uuid import UUID, uuid4
 
+from app.models.system_state import SystemState
+
 os.environ.setdefault("UVICORN_DATABASE_URL", "sqlite:///./db_test.sqlite3")
 os.environ.setdefault(
     "UVICORN_JWT_SECRET_KEY",
@@ -57,6 +59,18 @@ def test_health_endpoint_returns_expected_response(client: TestClient) -> None:
 
 
 def test_create_first_user_endpoint(client: TestClient) -> None:
+
+    # 1. Initialize the bootstrap state in the test database.
+    with SessionLocal() as db:
+        db.add(
+            SystemState(
+                id=1,
+                bootstrap_completed=False,
+            )
+        )
+        db.commit()
+
+    # 2. Prepare the request payload.
     payload = {
         "username": "first_admin",
         "email": "first.admin@example.com",
@@ -65,17 +79,31 @@ def test_create_first_user_endpoint(client: TestClient) -> None:
         "last_name": "Admin",
     }
 
-    first_response = client.post("/admin/init/create-first-user", json=payload)
+    # 3. First request must create the administrator.
+    first_response = client.post(
+        "/admin/init/create-first-user",
+        json=payload,
+    )
     assert first_response.status_code == 201, first_response.json()
+
     data = first_response.json()
     assert data["username"] == "first_admin"
     assert any(role["name"] == "admin" for role in data["roles"])
 
-    # Second attempt should fail with 409 Conflict
-    second_response = client.post("/admin/init/create-first-user", json=payload)
+    # 4. Second request must return 409 Conflict.
+    second_response = client.post(
+        "/admin/init/create-first-user",
+        json=payload,
+    )
     assert second_response.status_code == 409
 
-    # Cleanup the first user to keep the database clean for subsequent tests
+    # 5. Verify that bootstrap remains completed.
+    with SessionLocal() as db:
+        state = db.get(SystemState, 1)
+        assert state is not None
+        assert state.bootstrap_completed is True
+
+    # 6. Cleanup the first user.
     with SessionLocal() as db:
         created_user = db.get(User, UUID(data["id"]))
         if created_user is not None:
