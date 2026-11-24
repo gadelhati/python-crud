@@ -1,20 +1,6 @@
-# tests/conftest.py
-
-import os
+# Configure the test environment before importing the application.
 from collections.abc import Generator
 from uuid import uuid4
-
-# Force SQLite as the test database before importing the application.
-os.environ["UVICORN_DATABASE_URL"] = "sqlite:///./db_test.sqlite3"
-
-os.environ.setdefault(
-    "UVICORN_JWT_SECRET_KEY",
-    "test-secret-key-with-at-least-thirty-two-characters",
-)
-os.environ.setdefault(
-    "UVICORN_JWT_REFRESH_SECRET_KEY",
-    "test-refresh-secret-key-with-at-least-thirty-two-chars",
-)
 
 import pytest
 from fastapi.testclient import TestClient
