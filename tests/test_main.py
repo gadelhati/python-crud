@@ -13,12 +13,51 @@ os.environ.setdefault(
     "test-refresh-secret-key-with-at-least-thirty-two-chars",
 )
 
+from fastapi import Request, status
 from fastapi.testclient import TestClient
 from sqlalchemy.engine import make_url
 
 from app.database import SessionLocal
+from app.main import service_error_handler
 from app.models.user import User
+from app.services.errors import ServiceError
 from tests.conftest import authentication_headers
+
+
+def test_service_error_handler_maps_http_status_codes() -> None:
+    cases = {
+        "not_found": status.HTTP_404_NOT_FOUND,
+        "roles_not_found": status.HTTP_404_NOT_FOUND,
+        "permissions_not_found": status.HTTP_404_NOT_FOUND,
+        "forbidden": status.HTTP_403_FORBIDDEN,
+        "invalid_credentials": status.HTTP_401_UNAUTHORIZED,
+        "account_locked": status.HTTP_423_LOCKED,
+        "conflict": status.HTTP_409_CONFLICT,
+        "validation_error": status.HTTP_422_UNPROCESSABLE_CONTENT,
+        "invalid_operation": status.HTTP_400_BAD_REQUEST,
+        "service_error": status.HTTP_500_INTERNAL_SERVER_ERROR,
+    }
+
+    request = Request({"type": "http", "headers": []})
+
+    for code, expected_status in cases.items():
+        response = service_error_handler(
+            request,
+            ServiceError("Test error", code=code),
+        )
+
+        assert response.status_code == expected_status
+
+
+def test_service_error_handler_uses_internal_error_for_unknown_code() -> None:
+    request = Request({"type": "http", "headers": []})
+
+    response = service_error_handler(
+        request,
+        ServiceError("Unknown error", code="unknown_code"),
+    )
+
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
 def assert_test_database(database_url: str) -> None:

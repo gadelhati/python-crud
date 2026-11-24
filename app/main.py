@@ -55,20 +55,27 @@ app.include_router(permission)
 
 STATUS_BY_ERROR_CODE: dict[str, int] = {
     "not_found": status.HTTP_404_NOT_FOUND,
+    "roles_not_found": status.HTTP_404_NOT_FOUND,
+    "permissions_not_found": status.HTTP_404_NOT_FOUND,
     "invalid_credentials": status.HTTP_401_UNAUTHORIZED,
     "token_expired": status.HTTP_401_UNAUTHORIZED,
     "invalid_token": status.HTTP_401_UNAUTHORIZED,
+    "forbidden": status.HTTP_403_FORBIDDEN,
     "account_locked": status.HTTP_423_LOCKED,
     "conflict": status.HTTP_409_CONFLICT,
     "integrity_error": status.HTTP_409_CONFLICT,
     "validation_error": status.HTTP_422_UNPROCESSABLE_CONTENT,
     "invalid_operation": status.HTTP_400_BAD_REQUEST,
+    "service_error": status.HTTP_500_INTERNAL_SERVER_ERROR,
 }
 
 
 @app.exception_handler(ServiceError)
 def service_error_handler(_: Request, exc: ServiceError) -> JSONResponse:
-    http_status = STATUS_BY_ERROR_CODE.get(exc.code, status.HTTP_400_BAD_REQUEST)
+    http_status = STATUS_BY_ERROR_CODE.get(
+        exc.code,
+        status.HTTP_500_INTERNAL_SERVER_ERROR,
+    )
     headers = (
         {"WWW-Authenticate": "Bearer"} if http_status == status.HTTP_401_UNAUTHORIZED else None
     )
