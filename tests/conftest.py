@@ -8,6 +8,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
+# isort: off
+
+# Configure the test environment before importing the application.
+from tests.config import backend
+
 from app.database import engine, get_db
 from app.main import app
 
@@ -18,8 +23,7 @@ from app.models.user import User
 from app.rate_limit import limiter
 from app.services.password import hash_password
 
-# Configure the test environment before importing the application.
-from tests.config import backend
+# isort: on
 
 
 def _assert_test_engine(test_engine: Engine) -> None:
