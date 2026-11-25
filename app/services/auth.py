@@ -18,6 +18,7 @@ from app.services.password import verify_password
 from app.services.token import (
     create_access_token,
     create_refresh_token,
+    decode_access_token_claims,
     decode_refresh_token,
 )
 
@@ -111,25 +112,26 @@ class ServiceAuth:
 
         return self._issue_tokens(user.id)
 
-    def logout(self, refresh_token: str) -> None:
-        """Revokes the refresh token for logout.
+    def logout(self, access_token: str, refresh_token: str) -> None:
+        """Revoke access and refresh tokens during logout."""
 
-        Security note:
-        - Refresh token is immediately revoked (prevents new sessions)
-        - Access tokens must be revoked separately via decode_access_token(db)
-          which checks the revocation blacklist
-        - See decode_access_token() for access token revocation logic
+        refresh_user_id, refresh_jti, refresh_expires_at = decode_refresh_token(refresh_token)
 
-        Implementation:
-        - If access tokens need immediate revocation (not expiration-based),
-          two strategies are available:
-          1. Revoke all tokens by user_id + created_before timestamp
-          2. Store access_token JTI separately in RevokedToken table
-          Currently using strategy #2 (implicit via decode_access_token check)
-        """
-        user_id, jti, expires_at = decode_refresh_token(refresh_token)
-        if not self._is_token_revoked(jti):
-            self._revoke_token(jti, user_id, expires_at)
+        try:
+            access_user_id, access_jti, access_expires_at = decode_access_token_claims(access_token)
+        except ServiceError as exc:
+            # An expired access token is already unusable.
+            if exc.code != "token_expired":
+                raise
+        else:
+            if access_user_id != refresh_user_id:
+                raise ServiceError("Tokens do not belong to the same user", code="invalid_token")
+
+            if not self._is_token_revoked(access_jti):
+                self._revoke_token(access_jti, access_user_id, access_expires_at)
+
+        if not self._is_token_revoked(refresh_jti):
+            self._revoke_token(refresh_jti, refresh_user_id, refresh_expires_at)
 
     def purge_expired_tokens(self) -> int:
         """Remove tokens expirados da blacklist para manter a tabela enxuta."""

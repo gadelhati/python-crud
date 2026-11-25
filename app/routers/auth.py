@@ -1,9 +1,11 @@
 # app/routers/auth.py - Router for handling authentication-related
 # endpoints
-from fastapi import APIRouter, Request, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.config import settings
-from app.dependencies import DbSession
+from app.dependencies import DbSession, oauth2_scheme
 from app.rate_limit import limiter
 from app.schemas.auth import LoginRequest, RefreshTokenRequest, TokenResponse
 from app.services.auth import ServiceAuth
@@ -24,5 +26,16 @@ def refresh_token(request: Request, payload: RefreshTokenRequest, db: DbSession)
 
 
 @auth.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(request: RefreshTokenRequest, db: DbSession) -> None:
-    ServiceAuth(db).logout(request.refresh_token)
+def logout(
+    payload: RefreshTokenRequest,
+    db: DbSession,
+    access_token: Annotated[str | None, Depends(oauth2_scheme)],
+) -> None:
+    if not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Autenticação obrigatória",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    ServiceAuth(db).logout(access_token, payload.refresh_token)

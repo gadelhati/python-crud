@@ -1,7 +1,7 @@
 # Roadmap
 
 ## in development
-- [ ] o logout revoga apenas o refresh token; o access token permanece válido até expirar.
+- [x] o logout revoga apenas o refresh token; o access token permanece válido até expirar.
 - [ ] implementar MFA usando aplicativo autenticador
 - [ ] recuperação de senha implementada ou revogação por sessão/família.
 - [ ] CORS configurável

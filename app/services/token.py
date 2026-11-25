@@ -83,14 +83,19 @@ def create_refresh_token(user_id: UUID) -> str:
     )
 
 
-def decode_access_token(token: str, db: Session | None = None) -> UUID:
-    """Decode access token and optionally check if revoked."""
-
-    user_id, jti, _ = _decode(
+def decode_access_token_claims(token: str) -> tuple[UUID, str, datetime]:
+    """Decode an access token and return its identifying claims."""
+    return _decode(
         token,
         settings.jwt_secret_key.get_secret_value(),
         "access",
     )
+
+
+def decode_access_token(token: str, db: Session | None = None) -> UUID:
+    """Decode access token and optionally check if revoked."""
+
+    user_id, jti, _ = decode_access_token_claims(token)
 
     if db is not None:
         from app.models.revoked_token import RevokedToken

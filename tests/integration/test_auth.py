@@ -48,8 +48,19 @@ def test_login_lockout_unlock_and_refresh_rotation(client, auth_headers, user_fa
     replay = client.post("/login/refresh", json={"refresh_token": old_refresh})
     assert replay.status_code == 401
 
-    logout = client.post("/login/logout", json={"refresh_token": new_refresh})
+    logout = client.post(
+        "/login/logout",
+        json={"refresh_token": new_refresh},
+        headers={"Authorization": f"Bearer {rotated.json()['access_token']}"},
+    )
     assert logout.status_code == 204
+
+    protected = client.get(
+        f"/user/{target.id}/security",
+        headers={"Authorization": f"Bearer {rotated.json()['access_token']}"},
+    )
+    assert protected.status_code == 401
+
     assert (
         client.post(
             "/login/refresh",
