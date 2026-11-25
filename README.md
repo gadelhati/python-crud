@@ -2,12 +2,13 @@
 
 # _Python CRUD_
 
-[![GitHub stars](https://img.shields.io/github/stars/forgepack/python-crud?style=social)](https://github.com/forgepack/python-crud)
-[![GitHub forks](https://img.shields.io/github/forks/forgepack/python-crud?style=social)](https://github.com/forgepack/python-crud/fork)
-[![GitHub watchers](https://img.shields.io/github/watchers/forgepack/python-crud?style=social)](https://github.com/forgepack/python-crud)
+[![GitHub stars](https://img.shields.io/github/stars/gadelhati/python-crud?style=social)](https://github.com/gadelhati/python-crud)
+[![GitHub forks](https://img.shields.io/github/forks/gadelhati/python-crud?style=social)](https://github.com/gadelhati/python-crud/fork)
+[![GitHub watchers](https://img.shields.io/github/watchers/gadelhati/python-crud?style=social)](https://github.com/gadelhati/python-crud)
 
-[![CI](https://github.com/forgepack/python-crud/actions/workflows/ci.yml/badge.svg)](https://github.com/forgepack/python-crud/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/forgepack/python-crud/blob/main/LICENSE.md)
+[![CI](https://github.com/gadelhati/python-crud/actions/workflows/ci.yml/badge.svg)](https://github.com/gadelhati/python-crud/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/gadelhati/python-crud/branch/main/graph/badge.svg)](https://codecov.io/gh/gadelhati/python-crud)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/gadelhati/python-crud/blob/main/LICENSE.md)
 
 </div>
 
@@ -215,10 +216,10 @@ This project is licensed under the __MIT License__ — see the [LICENSE.md](LICE
 
 __⭐ Did you like the project? Leave a star! ⭐__
 
-[![GitHub stars](https://img.shields.io/github/stars/forgepack/python-crud?style=social)](https://github.com/forgepack/python-crud)
-[![GitHub forks](https://img.shields.io/github/forks/forgepack/python-crud?style=social)](https://github.com/forgepack/python-crud/fork)
-[![GitHub watchers](https://img.shields.io/github/watchers/forgepack/python-crud?style=social)](https://github.com/forgepack/python-crud)
+[![GitHub stars](https://img.shields.io/github/stars/gadelhati/python-crud?style=social)](https://github.com/gadelhati/python-crud)
+[![GitHub forks](https://img.shields.io/github/forks/gadelhati/python-crud?style=social)](https://github.com/gadelhati/python-crud/fork)
+[![GitHub watchers](https://img.shields.io/github/watchers/gadelhati/python-crud?style=social)](https://github.com/gadelhati/python-crud)
 
-__Made by [Forgepack](https://github.com/forgepack)__
+__Made by [gadelhati](https://github.com/gadelhati)__
 
 </div>
