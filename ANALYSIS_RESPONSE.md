@@ -7,7 +7,7 @@ A auditoria será baseada no código efetivamente publicado no repositório, e n
 - Repositório: [github.com/gadelhati/python-crud](https://github.com/gadelhati/python-crud?utm_source=chatgpt.com)
 - Branch: `main`.
 - Commit de referência da árvore inspecionada: `738ee7b3de4e468a030b47aa983084f0b56e393f`.
-- Contexto tecnológico: Python 3.13, FastAPI, SQLAlchemy 2, Pydantic 2, Alembic, Pytest, SQLite e futura utilização de PostgreSQL.
+- Contexto tecnológico: Python 3.12, FastAPI, SQLAlchemy 2, Pydantic 2, Alembic, Pytest, SQLite e futura utilização de PostgreSQL.
 
 A árvore do repositório foi localizada e confirma a existência das camadas de aplicação, modelos, repositories, services, routers, schemas, validações, migrations, testes, documentação e CI.
 
@@ -55,6 +55,7 @@ O problema ocorre na tentativa de downgrade da migration.
 
 O resultado da CI de 20/11/2026 foi:
 
+- Python 3.12: aprovado.
 - Python 3.13: aprovado.
 - Python 3.14: aprovado.
 - Python 3.15: aprovado.
@@ -102,7 +103,7 @@ Existem decisões técnicas que considero corretas e que não recomendaria alter
 ### **2.1. Arquitetura**
 
 - Separação entre Routers, Services e Repositories.
-- Repositório genérico com `TypeVar` moderno do Python 3.13.
+- Repositório genérico com `TypeVar` moderno do Python 3.12.
 - Services responsáveis pelas regras de negócio.
 - Repositories sem responsabilidade por commit.
 - Schemas Pydantic separados dos modelos SQLAlchemy.
@@ -908,6 +909,7 @@ Não executei os comandos localmente no ambiente do projeto. Consultei a execuç
 | ------------------------------------- | ------------------- |
 | Ruff check                            | Aprovado            |
 | Ruff format                           | Aprovado            |
+| Python 3.12                           | Aprovado            |
 | Python 3.13                           | Aprovado            |
 | Python 3.14                           | Aprovado            |
 | Python 3.15                           | Aprovado            |

@@ -42,7 +42,7 @@ python-crud/
 
 ## Tech Stack
 
-![Python](https://img.shields.io/badge/Python-3.13%2B-blue.svg)
+![Python](https://img.shields.io/badge/Python-3.12%2B-blue.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)
 ![SQLite](https://img.shields.io/badge/SQLite-3.54.1-blue?logo=sqlite&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.5-blue?logo=postgresql)
@@ -120,14 +120,14 @@ cp .env.example .env
 
 ## Local Setup & Running
 
-This project requires **Python 3.13** (`>=3.13,<3.16`).
+This project requires **Python 3.12** (`>=3.12,<3.16`).
 
 ```bash
 # create virtual environment
 # Windows PowerShell
-py -3.13 -m venv .venv
+py -3.12 -m venv .venv
 # Linux / macOS
-python3.13 -m venv .venv
+python3.12 -m venv .venv
 
 # activate virtual environment (*)
 # Windows PowerShell

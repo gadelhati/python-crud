@@ -23,7 +23,7 @@ Cada recomendação deve apresentar uma justificativa técnica objetiva e demons
 
 Considere as seguintes características do projeto:
 
-- Python 3.13.
+- Python 3.12.
 - FastAPI.
 - SQLAlchemy 2.
 - Pydantic 2.
@@ -145,7 +145,7 @@ Avalie:
 - Nomenclatura.
 - Imutabilidade quando pertinente.
 - Uso de constantes e configurações.
-- Uso correto dos recursos do Python 3.13.
+- Uso correto dos recursos do Python 3.12.
 - Compatibilidade entre as bibliotecas utilizadas.
 
 Avalie também a configuração do Ruff, identificando regras importantes que poderiam ser aplicadas sem gerar excesso de restrições.

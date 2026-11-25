@@ -4,7 +4,7 @@ Thank you for contributing to this FastAPI template. This guide describes the lo
 
 ## Prerequisites
 
-- Python 3.13, 3.14, or 3.15
+- Python 3.12, 3.13, 3.14, or 3.15
 - Git
 
 ## Local setup
@@ -22,14 +22,14 @@ Create and activate a virtual environment.
 ### Windows PowerShell
 
 ```powershell
-py -3.13 -m venv .venv
+py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
 ### Linux
 
 ```bash
-python3.13 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
 ```
 
@@ -73,7 +73,7 @@ The GitHub Actions workflow runs Ruff linting, formatting verification, and the 
 
 ## Code standards
 
-- Use Python 3.13-compatible syntax and keep code compatible with the supported Python range declared in `pyproject.toml`.
+- Use Python 3.12-compatible syntax and keep code compatible with the supported Python range declared in `pyproject.toml`.
 - Follow the Ruff configuration in `pyproject.toml`; it is the source of truth for linting and formatting.
 - Add type annotations to new public functions and methods.
 - Keep HTTP routes in `app/routers/`, business rules in `app/services/`, persistence code in `app/repositories/`, and request/response models in `app/schemas/` as the application grows.
