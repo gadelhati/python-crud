@@ -185,24 +185,6 @@ python -m pytest --cov=app --cov-report=term-missing
 python -m pytest --cov=app --cov-report=html
 ```
 
-## Migration creation commands
-```bash
-# create alembic config
-alembic init alembic
-
-# delete file and directory if they exist
-Remove-Item -Force -ErrorAction SilentlyContinue db.sqlite3, alembic\versions\*.py
-
-# generates the initial migration file by comparing the models with the database
-alembic revision --autogenerate -m "initial schema"
-
-# apply the migration to the database
-alembic upgrade head
-
-# generate a new migration after model changes
-alembic revision --autogenerate -m "describe change"
-```
-
 ## DEVELOPERS
 
 ### Contributors
