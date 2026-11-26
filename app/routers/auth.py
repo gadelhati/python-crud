@@ -1,5 +1,4 @@
-# app/routers/auth.py - Router for handling authentication-related
-# endpoints
+# app/routers/auth.py - Authentication endpoints
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -7,8 +6,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from app.config import settings
 from app.dependencies import DbSession, oauth2_scheme
 from app.rate_limit import limiter
-from app.schemas.auth import LoginRequest, RefreshTokenRequest, TokenResponse
+from app.schemas.auth import (
+    LoginRequest,
+    PasswordResetConfirmRequest,
+    PasswordResetRequest,
+    RefreshTokenRequest,
+    TokenResponse,
+)
 from app.services.auth import ServiceAuth
+from app.services.password_reset import ServicePasswordReset
 
 auth = APIRouter(prefix="/login", tags=["Authentication"])
 
@@ -39,3 +45,27 @@ def logout(
         )
 
     ServiceAuth(db).logout(access_token, payload.refresh_token)
+
+
+@auth.post("/password-reset/request", status_code=status.HTTP_202_ACCEPTED)
+@limiter.limit(settings.rate_limit_password_reset)
+def request_password_reset(
+    request: Request,
+    payload: PasswordResetRequest,
+    db: DbSession,
+) -> dict[str, str]:
+    message = ServicePasswordReset(db).request_reset(str(payload.email))
+    return {"message": message}
+
+
+@auth.post("/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit(settings.rate_limit_password_reset)
+def confirm_password_reset(
+    request: Request,
+    payload: PasswordResetConfirmRequest,
+    db: DbSession,
+) -> None:
+    ServicePasswordReset(db).confirm_reset(
+        payload.token,
+        payload.new_password,
+    )

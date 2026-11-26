@@ -10,10 +10,12 @@ class LoginRequest(SchemaBase):
     model_config = ConfigDict(str_strip_whitespace=False)
 
     username: str = Field(
-        min_length=UserValidation.USERNAME_MIN_LENGTH, max_length=UserValidation.USERNAME_MAX_LENGTH
+        min_length=UserValidation.USERNAME_MIN_LENGTH,
+        max_length=UserValidation.USERNAME_MAX_LENGTH,
     )
     password: str = Field(
-        min_length=UserValidation.PASSWORD_MIN_LENGTH, max_length=UserValidation.PASSWORD_MAX_LENGTH
+        min_length=UserValidation.PASSWORD_MIN_LENGTH,
+        max_length=UserValidation.PASSWORD_MAX_LENGTH,
     )
 
     @field_validator("username")
@@ -48,7 +50,7 @@ class RefreshTokenRequest(SchemaBase):
 class PasswordResetRequest(SchemaBase):
     """Schema for password reset requests."""
 
-    email: EmailStr = Field(max_length=UserValidation.PASSWORD_MAX_LENGTH)
+    email: EmailStr = Field(max_length=UserValidation.EMAIL_MAX_LENGTH)
 
 
 class PasswordResetConfirmRequest(SchemaBase):
@@ -58,7 +60,8 @@ class PasswordResetConfirmRequest(SchemaBase):
 
     token: str = Field(min_length=1)
     new_password: str = Field(
-        min_length=UserValidation.PASSWORD_MIN_LENGTH, max_length=UserValidation.PASSWORD_MAX_LENGTH
+        min_length=UserValidation.PASSWORD_MIN_LENGTH,
+        max_length=UserValidation.PASSWORD_MAX_LENGTH,
     )
 
     @field_validator("new_password")

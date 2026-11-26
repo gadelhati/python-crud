@@ -1,5 +1,4 @@
-# app/config.py - Application configuration settings,
-# including server, JWT, and database settings
+# app/config.py - Application configuration settings
 from pathlib import Path
 
 from pydantic import Field, SecretStr, model_validator
@@ -15,15 +14,37 @@ class Settings(BaseSettings):
     port: int = 9000
     root_path: str = ""
     reload: bool = False
+
+    # JWT
     jwt_secret_key: SecretStr = Field(min_length=32)
     jwt_access_token_expire_minutes: int = Field(default=30, gt=0)
     jwt_refresh_secret_key: SecretStr = Field(min_length=32)
     jwt_refresh_token_expire_minutes: int = Field(default=60 * 24 * 7, gt=0)
+
+    # Password reset
+    password_reset_token_expire_minutes: int = Field(default=30, gt=0)
+    password_reset_url: str | None = None
+
+    # SMTP
+    smtp_host: str | None = None
+    smtp_port: int = Field(default=587, gt=0, le=65535)
+    smtp_username: str | None = None
+    smtp_password: SecretStr | None = None
+    smtp_from: str | None = None
+    smtp_use_ssl: bool = False
+    smtp_starttls: bool = True
+
+    # Database
     database_url: str = Field(min_length=1)
+
+    # Rate limiting
     rate_limit_storage_uri: str = "memory://"
     rate_limit_login: str = "10/minute"
     rate_limit_refresh: str = "10/minute"
     rate_limit_bootstrap: str = "3/minute"
+    rate_limit_password_reset: str = "3/minute"
+
+    # CORS
     cors_allow_origins: list[str] = Field(default_factory=list)
     cors_allow_methods: list[str] = Field(
         default_factory=lambda: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
@@ -35,6 +56,12 @@ class Settings(BaseSettings):
     def validate_jwt_secrets(self) -> "Settings":
         if self.jwt_secret_key.get_secret_value() == self.jwt_refresh_secret_key.get_secret_value():
             raise ValueError("JWT access and refresh secrets must be different")
+        return self
+
+    @model_validator(mode="after")
+    def validate_smtp_transport(self) -> "Settings":
+        if self.smtp_use_ssl and self.smtp_starttls:
+            raise ValueError("SMTP SSL and STARTTLS cannot be enabled simultaneously")
         return self
 
     model_config = SettingsConfigDict(

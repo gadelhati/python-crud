@@ -1,5 +1,4 @@
-# app/dependencies.py - Dependency injection setup for FastAPI,
-# including user repository and authentication dependencies
+# app/dependencies.py - Dependency injection setup for FastAPI
 from collections.abc import Callable
 from typing import Annotated
 from uuid import UUID
@@ -13,7 +12,9 @@ from app.enum.permission_action import EnumPermissionAction
 from app.models.user import User
 from app.repositories.user import UserRepository
 from app.services.base import ServiceError
-from app.services.token import decode_access_token
+from app.services.token import (
+    decode_access_token_claims_with_version,
+)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login", auto_error=False)
 DbSession = Annotated[Session, Depends(get_db)]
@@ -50,8 +51,15 @@ def get_authenticated_user(
         )
 
     try:
-        # Decode and check if token is revoked (not on blacklist)
-        user_id = decode_access_token(token, db)
+        user_id, jti, _, token_auth_version = decode_access_token_claims_with_version(token)
+
+        from sqlalchemy import select
+
+        from app.models.revoked_token import RevokedToken
+
+        if db.scalar(select(RevokedToken.jti).where(RevokedToken.jti == jti)) is not None:
+            raise ServiceError("Token has been revoked", code="invalid_token")
+
     except ServiceError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -60,10 +68,11 @@ def get_authenticated_user(
         ) from exc
 
     user = UserRepository(db).find_by_id(user_id)
-    if user is None or not user.is_active:
+
+    if user is None or not user.is_active or user.auth_version != token_auth_version:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuário inativo ou não encontrado.",
+            detail="Usuário inativo ou sessão inválida.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -101,7 +110,7 @@ def require_self_or_admin(
     user_id: Annotated[UUID, Path()],
     current_user: AuthenticatedUser,
 ) -> User:
-    """Allows access if the authenticated user owns the resource or is an admin."""
+    """Allows access if the user owns the resource or is an admin."""
     if current_user.id != user_id and not _is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -114,7 +123,7 @@ SelfOrAdminUser = Annotated[User, Depends(require_self_or_admin)]
 
 
 def require_permission(required_action: EnumPermissionAction) -> Callable[[User], User]:
-    """Fábrica de dependência que valida se o usuário possui a permissão exigida."""
+    """Factory dependency that validates the required permission."""
 
     def dependency(current_user: AuthenticatedUser) -> User:
         if not _has_permission(current_user, required_action):
@@ -130,7 +139,7 @@ def require_permission(required_action: EnumPermissionAction) -> Callable[[User]
 def require_self_or_permission(
     required_action: EnumPermissionAction,
 ) -> Callable[[UUID, User], User]:
-    """Permite acesso ao próprio dono do recurso OU a quem tiver a permissão exigida."""
+    """Allows access to the resource owner or a user with the required permission."""
 
     def dependency(
         user_id: Annotated[UUID, Path()],

@@ -1,5 +1,4 @@
-# app/models/user.py - User model representing system
-# users and their attributes
+# app/models/user.py - User model representing system users
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -21,8 +20,10 @@ class User(Base, IdMixin, AuditMixin):
     username: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     password: Mapped[str] = mapped_column(String(256))
+
     first_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     last_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
@@ -31,10 +32,15 @@ class User(Base, IdMixin, AuditMixin):
         doc="Whether user account is active",
     )
     is_verified: Mapped[bool] = mapped_column(
-        Boolean, default=False, server_default=text("false"), doc="Whether user email is verified"
+        Boolean,
+        default=False,
+        server_default=text("false"),
+        doc="Whether user email is verified",
     )
+
     last_login: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), doc="Last successful login timestamp"
+        DateTime(timezone=True),
+        doc="Last successful login timestamp",
     )
     failed_login_attempts: Mapped[int] = mapped_column(
         Integer,
@@ -43,7 +49,16 @@ class User(Base, IdMixin, AuditMixin):
         doc="Count of consecutive failed login attempts",
     )
     locked_until: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), doc="Account lock expiration timestamp"
+        DateTime(timezone=True),
+        doc="Account lock expiration timestamp",
+    )
+
+    auth_version: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        server_default=text("0"),
+        nullable=False,
+        doc="Authentication version used to invalidate previously issued JWTs",
     )
 
     """Relationships"""
