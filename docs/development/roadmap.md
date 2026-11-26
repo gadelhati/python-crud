@@ -13,7 +13,7 @@
 - [ ] Não existe histórico append-only de alterações; a auditoria conserva apenas o estado atual e metadados da última alteração.
 - [x] A CI não exige cobertura, não executa cobertura no pipeline e não cobre alguns cenários importantes, como revogação imediata de access token no logout e headers de segurança
 - [x] Há inconsistências de porta
-- [ ] Descrição incorreta de secret opcional
+- [x] Descrição incorreta de secret opcional
 - [ ] ausência de Docker
 - [ ] pouca documentação de hardening para produção
 

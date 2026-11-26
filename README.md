@@ -110,7 +110,7 @@ cp .env.example .env
 | `UVICORN_RELOAD` | `false` | Enable auto-reload in development |
 | `UVICORN_JWT_SECRET_KEY` | *(required)* | Secret key for signing access tokens (min 32 chars) |
 | `UVICORN_JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Access token lifetime in minutes |
-| `UVICORN_JWT_REFRESH_SECRET_KEY` | `None` | Optional separate secret key for refresh tokens |
+| `UVICORN_JWT_REFRESH_SECRET_KEY` | *(required)* | Separate secret key for signing refresh tokens (min 32 chars; must differ from the access token secret) |
 | `UVICORN_JWT_REFRESH_TOKEN_EXPIRE_MINUTES` | `10080` | Refresh token lifetime in minutes (7 days) |
 | `UVICORN_DATABASE_URL` | *(required)* | SQLAlchemy database connection URL |
 | `UVICORN_RATE_LIMIT_STORAGE_URI` | `memory://` | SlowAPI storage backend (`memory://` or `redis://...`) |
