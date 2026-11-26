@@ -28,3 +28,7 @@ db_test.sqlite3
 
 # Database
 db.*
+
+# Docker
+!.env.example
+!.env.docker.example
