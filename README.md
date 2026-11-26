@@ -154,7 +154,7 @@ python -m zipfile -l dist/python_crud-1.0.0-py3-none-any.whl
 python -m app.main
 ```
 
-Interactive API documentation is available at `http://127.0.0.1:9001/docs`.
+Interactive API documentation is available at `http://127.0.0.1:9000/docs`.
 
 ## Code Quality (Ruff)
 
