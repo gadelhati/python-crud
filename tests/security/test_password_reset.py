@@ -1,12 +1,17 @@
 """Tests for password reset workflow."""
 
+from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qs, urlsplit
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.models.password_reset_token import PasswordResetToken
+from app.services.base import ServiceError
 from app.services.password import hash_password, verify_password
+from app.services.password_reset import ServicePasswordReset
 
 
 def test_password_reset_request_returns_generic_response(
@@ -226,3 +231,37 @@ def test_password_reset_email_failure_does_not_reveal_account(
 
     assert response.status_code == 202
     assert "registered" in response.json()["message"].lower()
+
+
+def test_build_reset_url_requires_configuration(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "password_reset_url", None)
+
+    with pytest.raises(
+        RuntimeError,
+        match="Password reset URL is not configured",
+    ):
+        ServicePasswordReset._build_reset_url("test-token")
+
+
+def test_password_reset_rejects_inactive_user(
+    db_session: Session,
+    user_factory,
+) -> None:
+    user = user_factory()
+    user.is_active = False
+
+    reset_token = PasswordResetToken(
+        user_id=user.id,
+        token_hash=ServicePasswordReset._hash_token("valid-token"),
+        expires_at=datetime.now(UTC) + timedelta(minutes=5),
+    )
+
+    db_session.add(reset_token)
+    db_session.flush()
+
+    service = ServicePasswordReset(db_session)
+
+    with pytest.raises(ServiceError) as error:
+        service.confirm_reset("valid-token", "NewPassword456!")
+
+    assert error.value.code == "invalid_token"

@@ -58,7 +58,7 @@ def _decode_with_version(
         expires_at = datetime.fromtimestamp(payload["exp"], tz=UTC)
         auth_version = payload.get("auth_version", 0)
 
-        if not isinstance(auth_version, int) or auth_version < 0:
+        if type(auth_version) is not int or auth_version < 0:
             raise jwt.InvalidTokenError("Invalid authentication version")
 
         return user_id, jti, expires_at, auth_version

@@ -5,8 +5,8 @@
 - [ ] implementar MFA usando aplicativo autenticador
 - [ ] rate limiting distribuído por padrão.
 - [ ] pouca documentação de hardening para produção
-- [ ] há algumas abstrações incompletas ou não utilizadas
-    - [ ] como schemas de reset de senha
+- [>] há algumas abstrações incompletas ou não utilizadas
+    - [x] como schemas de reset de senha
     - [ ] além de mapeamento de erros baseado em análise textual das mensagens do banco.
 - [x] o logout revoga apenas o refresh token; o access token permanece válido até expirar.
 - [x] recuperação de senha implementada ou revogação por sessão/família.

@@ -10,6 +10,7 @@ from app.services.token import (
     create_access_token,
     create_refresh_token,
     decode_access_token,
+    decode_access_token_claims_with_version,
     decode_refresh_token,
 )
 
@@ -67,4 +68,87 @@ def test_token_requires_all_security_claims() -> None:
 
     with pytest.raises(ServiceError) as error:
         decode_access_token(token)
+    assert error.value.code == "invalid_token"
+
+
+def test_legacy_access_token_defaults_auth_version_to_zero() -> None:
+    user_id = uuid4()
+
+    payload = {
+        "sub": str(user_id),
+        "jti": str(uuid4()),
+        "exp": datetime.now(UTC) + timedelta(minutes=5),
+        "token_type": "access",
+    }
+
+    token = jwt.encode(
+        payload,
+        settings.jwt_secret_key.get_secret_value(),
+        algorithm="HS256",
+    )
+
+    decoded_user_id, _, _, auth_version = decode_access_token_claims_with_version(token)
+
+    assert decoded_user_id == user_id
+    assert auth_version == 0
+
+
+def test_access_token_preserves_auth_version() -> None:
+    user_id = uuid4()
+
+    token = create_access_token(user_id, auth_version=3)
+
+    decoded_user_id, _, _, auth_version = decode_access_token_claims_with_version(token)
+
+    assert decoded_user_id == user_id
+    assert auth_version == 3
+
+
+@pytest.mark.parametrize(
+    "auth_version",
+    [True, -1, "1", None],
+)
+def test_access_token_rejects_invalid_auth_version(auth_version) -> None:
+    payload = {
+        "sub": str(uuid4()),
+        "jti": str(uuid4()),
+        "exp": datetime.now(UTC) + timedelta(minutes=5),
+        "token_type": "access",
+        "auth_version": auth_version,
+    }
+
+    token = jwt.encode(
+        payload,
+        settings.jwt_secret_key.get_secret_value(),
+        algorithm="HS256",
+    )
+
+    with pytest.raises(ServiceError) as error:
+        decode_access_token_claims_with_version(token)
+
+    assert error.value.code == "invalid_token"
+
+
+def test_decode_access_token_checks_revocation() -> None:
+    user_id = uuid4()
+    token = create_access_token(user_id)
+
+    class ActiveTokenDB:
+        def scalar(self, statement):
+            return None
+
+    assert decode_access_token(token, db=ActiveTokenDB()) == user_id
+
+
+def test_decode_access_token_rejects_revoked_token() -> None:
+    user_id = uuid4()
+    token = create_access_token(user_id)
+
+    class RevokedTokenDB:
+        def scalar(self, statement):
+            return "revoked-jti"
+
+    with pytest.raises(ServiceError) as error:
+        decode_access_token(token, db=RevokedTokenDB())
+
     assert error.value.code == "invalid_token"
