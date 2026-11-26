@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     rate_limit_login: str = "10/minute"
     rate_limit_refresh: str = "10/minute"
     rate_limit_bootstrap: str = "3/minute"
+    cors_allow_origins: list[str] = Field(default_factory=list)
+    cors_allow_methods: list[str] = Field(
+        default_factory=lambda: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+    )
+    cors_allow_headers: list[str] = Field(default_factory=lambda: ["Authorization", "Content-Type"])
+    cors_allow_credentials: bool = False
 
     @model_validator(mode="after")
     def validate_jwt_secrets(self) -> "Settings":

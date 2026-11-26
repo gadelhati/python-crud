@@ -4,7 +4,7 @@
 - [x] o logout revoga apenas o refresh token; o access token permanece válido até expirar.
 - [ ] implementar MFA usando aplicativo autenticador
 - [ ] recuperação de senha implementada ou revogação por sessão/família.
-- [ ] CORS configurável
+- [x] CORS configurável
 - [ ] headers de segurança
 - [ ] configuração explícita de HTTPS
 - [ ] rate limiting distribuído por padrão.
