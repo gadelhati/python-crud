@@ -5,6 +5,7 @@
 - [ ] implementar MFA usando aplicativo autenticador
 - [ ] rate limiting distribuído por padrão.
 - [ ] há algumas abstrações incompletas ou não utilizadas, além de mapeamento de erros baseado em análise textual das mensagens do banco.
+- [ ] usar Argon2id
 
 ## in concept
 - [ ] O endpoint de bootstrap pode ser usado para assumir o primeiro administrador em banco vazio.
