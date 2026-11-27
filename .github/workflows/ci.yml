@@ -40,6 +40,20 @@ jobs:
         run: |
           python -c "from app.config import settings; assert settings.jwt_secret_key.get_secret_value() != settings.jwt_refresh_secret_key.get_secret_value(); print('JWT configuration valid')"
 
+      - name: Validate test database
+        run: |
+          python -c "
+          from tests.config import backend
+          from app.database import engine
+
+          assert backend == 'postgresql', f'Expected PostgreSQL, got {backend}'
+          assert engine.dialect.name == 'postgresql', (
+              f'Expected PostgreSQL engine, got {engine.dialect.name}'
+          )
+
+          print(f'Test database backend: {engine.dialect.name}')
+          "
+
       - name: Run linter
         run: python -m ruff check .
 
@@ -70,6 +84,7 @@ jobs:
       UVICORN_JWT_SECRET_KEY: ci-access-secret-key-for-tests-only-2026
       UVICORN_JWT_REFRESH_SECRET_KEY: ci-refresh-secret-key-for-tests-only-2026
       UVICORN_DATABASE_URL: postgresql+psycopg://app:app@localhost:5432/app_test
+      PYTEST_DATABASE_URL: postgresql+psycopg://app:app@localhost:5432/app_test
 
     services:
       postgres:
@@ -104,11 +119,28 @@ jobs:
         run: |
           python -c "from app.config import settings; assert settings.jwt_secret_key.get_secret_value() != settings.jwt_refresh_secret_key.get_secret_value(); print('JWT configuration valid')"
 
+      - name: Validate test database
+        run: |
+          python -c "
+          from tests.config import backend
+          from app.database import engine
+
+          assert backend == 'postgresql', f'Expected PostgreSQL, got {backend}'
+          assert engine.dialect.name == 'postgresql', (
+              f'Expected PostgreSQL engine, got {engine.dialect.name}'
+          )
+
+          print(f'Test database backend: {engine.dialect.name}')
+          "
+
       - name: Run Alembic migrations (PostgreSQL)
         run: |
           alembic upgrade head
           alembic downgrade base
           alembic upgrade head
+
+      - name: Verify migrated schema (PostgreSQL)
+        run: python scripts/verify_migrated_schema.py
 
       - name: Run tests (PostgreSQL)
         run: python -m pytest -v
