@@ -1,4 +1,4 @@
-"""Tests for password reset workflow."""
+"""Security tests for the password reset workflow."""
 
 from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qs, urlsplit
@@ -19,13 +19,14 @@ def test_password_reset_request_returns_generic_response(
     user_factory,
     monkeypatch,
 ) -> None:
-    """Registered and unregistered emails must receive the same response."""
+    """Registered and unregistered emails receive the same public response."""
 
     user = user_factory()
+    sent_emails: list[tuple[str, str]] = []
 
     monkeypatch.setattr(
         "app.services.password_reset.send_password_reset_email",
-        lambda recipient, reset_url: None,
+        lambda recipient, reset_url: sent_emails.append((recipient, reset_url)),
     )
     monkeypatch.setattr(
         settings,
@@ -45,6 +46,8 @@ def test_password_reset_request_returns_generic_response(
     assert registered.status_code == 202
     assert unregistered.status_code == 202
     assert registered.json() == unregistered.json()
+    assert len(sent_emails) == 1
+    assert sent_emails[0][0] == user.email
 
 
 def test_password_reset_changes_password_and_invalidates_old_tokens(
@@ -206,7 +209,7 @@ def test_password_reset_email_failure_does_not_reveal_account(
     user_factory,
     monkeypatch,
 ) -> None:
-    """SMTP errors must not disclose whether the account exists."""
+    """SMTP errors are logged without changing the generic HTTP response."""
 
     user = user_factory()
 
@@ -231,6 +234,28 @@ def test_password_reset_email_failure_does_not_reveal_account(
 
     assert response.status_code == 202
     assert "registered" in response.json()["message"].lower()
+
+
+def test_password_reset_unknown_email_does_not_send_email(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    """Unknown addresses must not trigger email delivery."""
+
+    sent_emails: list[tuple[str, str]] = []
+
+    monkeypatch.setattr(
+        "app.services.password_reset.send_password_reset_email",
+        lambda recipient, reset_url: sent_emails.append((recipient, reset_url)),
+    )
+
+    response = client.post(
+        "/login/password-reset/request",
+        json={"email": "unknown@example.com"},
+    )
+
+    assert response.status_code == 202
+    assert sent_emails == []
 
 
 def test_build_reset_url_requires_configuration(monkeypatch) -> None:

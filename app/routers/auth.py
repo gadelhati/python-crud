@@ -1,7 +1,7 @@
 # app/routers/auth.py - Authentication endpoints
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 
 from app.config import settings
 from app.dependencies import DbSession, oauth2_scheme
@@ -52,10 +52,19 @@ def logout(
 def request_password_reset(
     request: Request,
     payload: PasswordResetRequest,
+    background_tasks: BackgroundTasks,
     db: DbSession,
 ) -> dict[str, str]:
-    message = ServicePasswordReset(db).request_reset(str(payload.email))
-    return {"message": message}
+    service = ServicePasswordReset(db)
+    email_data = service.request_reset(str(payload.email))
+
+    if email_data is not None:
+        # Persist the token before the background task attempts delivery.
+        # This prevents sending a reset link for a token that is not committed.
+        db.commit()
+        background_tasks.add_task(service.send_reset_email, *email_data)
+
+    return {"message": service.generic_response}
 
 
 @auth.post("/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT)

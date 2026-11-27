@@ -24,6 +24,8 @@ GENERIC_RESPONSE = "If the email address is registered, password reset instructi
 class ServicePasswordReset:
     """Creates, sends, validates and consumes password reset tokens."""
 
+    generic_response = GENERIC_RESPONSE
+
     def __init__(self, db: Session) -> None:
         self.db = db
 
@@ -50,8 +52,12 @@ class ServicePasswordReset:
             )
         )
 
-    def request_reset(self, email: str) -> str:
-        """Request a reset without disclosing whether the email exists."""
+    def request_reset(self, email: str) -> tuple[str, str] | None:
+        """Create a reset token and return email data for deferred delivery.
+
+        Returning ``None`` for an unknown/ineligible address keeps the public
+        response generic. SMTP delivery is deliberately not performed here.
+        """
 
         user = self.db.scalar(
             select(User).where(
@@ -62,7 +68,7 @@ class ServicePasswordReset:
         )
 
         if user is None:
-            return GENERIC_RESPONSE
+            return None
 
         now = datetime.now(UTC)
 
@@ -86,14 +92,25 @@ class ServicePasswordReset:
 
         try:
             reset_url = self._build_reset_url(raw_token)
-            send_password_reset_email(user.email, reset_url)
         except Exception:
             # Do not disclose account existence or expose the raw token.
-            logger.exception("Password reset email delivery failed.")
+            logger.exception("Password reset URL generation failed.")
             self.db.delete(reset_token)
             self.db.flush()
+            return None
 
-        return GENERIC_RESPONSE
+        return user.email, reset_url
+
+    @staticmethod
+    def send_reset_email(recipient: str, reset_url: str) -> None:
+        """Deliver the reset email after the HTTP response has been prepared."""
+
+        try:
+            send_password_reset_email(recipient, reset_url)
+        except Exception:
+            # The HTTP response has already been selected; never expose SMTP
+            # failures or account existence through the password-reset route.
+            logger.exception("Password reset email delivery failed.")
 
     def confirm_reset(self, token: str, new_password: str) -> None:
         """Consume a valid token and replace the user's password."""
