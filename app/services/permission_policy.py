@@ -32,11 +32,12 @@ class PermissionPolicy:
                 code="forbidden",
             )
 
-        # Keep the same administrator rule used by dependencies.py.
-        if any(role.name == "admin" for role in actor.roles):
+        active_roles = [role for role in actor.roles if role.deleted_at is None]
+
+        if any(role.name == "admin" for role in active_roles):
             return None
 
-        return {permission.action for role in actor.roles for permission in role.permissions}
+        return {permission.action for role in active_roles for permission in role.permissions}
 
     @classmethod
     def ensure_can_assign_roles(

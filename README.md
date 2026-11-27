@@ -185,6 +185,59 @@ python -m pytest --cov=app --cov-report=term-missing
 python -m pytest --cov=app --cov-report=html
 ```
 
+## Docker
+
+Docker Compose supports separate configurations for development and production.
+
+Copy the Docker environment template:
+
+```bash
+cp .env.docker.example .env.docker
+```
+
+Configure the PostgreSQL credentials and application secrets in `.env.docker`.
+
+**Important:** Always use `--env-file .env.docker` because the file provides variables for Compose interpolation as well as container configuration.
+
+### Development
+
+```bash
+# Start database and API
+docker compose --env-file .env.docker -f compose.yaml -f compose.dev.yaml up -d --build
+
+# Apply database migrations
+docker compose --env-file .env.docker -f compose.yaml -f compose.dev.yaml --profile tools run --rm migrate
+
+# View logs
+docker compose --env-file .env.docker -f compose.yaml -f compose.dev.yaml logs -f api
+```
+
+### Production
+
+```bash
+# Validate configuration
+docker compose --env-file .env.docker -f compose.yaml -f compose.prd.yaml config
+
+# Start database
+docker compose --env-file .env.docker -f compose.yaml -f compose.prd.yaml up -d db
+
+# Apply database migrations
+docker compose --env-file .env.docker -f compose.yaml -f compose.prd.yaml --profile tools run --rm migrate
+
+# Start API
+docker compose --env-file .env.docker -f compose.yaml -f compose.prd.yaml up -d api
+```
+
+### Stop services
+
+```bash
+docker compose --env-file .env.docker -f compose.yaml -f compose.dev.yaml down
+```
+
+Use `compose.prd.yaml` instead of `compose.dev.yaml` when stopping production services.
+
+**Note:** Database data is persisted in the `postgres_data` Docker volume. Do not use `down -v` unless database deletion is intentional.
+
 ## DEVELOPERS
 
 ### Contributors
