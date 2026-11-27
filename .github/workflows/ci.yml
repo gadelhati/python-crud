@@ -122,15 +122,25 @@ jobs:
       - name: Validate test database
         run: |
           python -c "
-          from tests.config import backend
+          import os
+          from tests.config import TEST_DATABASE_URL, backend
+
+          print('PYTEST_DATABASE_URL:', os.getenv('PYTEST_DATABASE_URL'))
+          print('TEST_DATABASE_URL:', TEST_DATABASE_URL)
+          print('Backend:', backend)
+
+          from app.config import settings
           from app.database import engine
+
+          print('Settings URL:', settings.database_url.split('@')[-1])
+          print('Engine backend:', engine.dialect.name)
 
           assert backend == 'postgresql', f'Expected PostgreSQL, got {backend}'
           assert engine.dialect.name == 'postgresql', (
               f'Expected PostgreSQL engine, got {engine.dialect.name}'
           )
 
-          print(f'Test database backend: {engine.dialect.name}')
+          print('PostgreSQL configuration valid')
           "
 
       - name: Run Alembic migrations (PostgreSQL)
