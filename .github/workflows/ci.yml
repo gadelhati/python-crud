@@ -139,8 +139,6 @@ jobs:
           alembic downgrade base
           alembic upgrade head
 
-      - name: Verify migrated schema (PostgreSQL)
-        run: python scripts/verify_migrated_schema.py
 
       - name: Run tests (PostgreSQL)
         run: python -m pytest -v

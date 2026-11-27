@@ -4,9 +4,14 @@ from collections.abc import Callable, Generator
 from uuid import uuid4
 
 import pytest
+from alembic.config import Config
+from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine
+from sqlalchemy import Engine, MetaData
 from sqlalchemy.orm import Session
+
+from alembic import command
 
 # isort: off
 
@@ -17,13 +22,40 @@ from app.database import engine, get_db
 from app.main import app
 
 # Import all mapped models before touching Base.metadata.
-from app.models.base import Base
 from app.models.role import Role
 from app.models.user import User
 from app.rate_limit import limiter
 from app.services.password import hash_password
 
 # isort: on
+
+
+def _drop_test_schema() -> None:
+    """Remove todas as tabelas do banco de testes, incluindo alembic_version."""
+    metadata = MetaData()
+    metadata.reflect(bind=engine)
+    metadata.drop_all(bind=engine)
+
+
+def _apply_migrations() -> None:
+    """Build the test schema exclusively through Alembic migrations."""
+    config = Config("alembic.ini")
+    command.upgrade(config, "head")
+
+
+def _verify_migrations() -> None:
+    """Ensure the database is at the current Alembic head."""
+    config = Config("alembic.ini")
+    script = ScriptDirectory.from_config(config)
+    expected_revision = script.get_current_head()
+
+    with engine.connect() as connection:
+        actual_revision = MigrationContext.configure(connection).get_current_revision()
+
+    if actual_revision != expected_revision:
+        raise RuntimeError(
+            f"Database migration mismatch: expected {expected_revision}, got {actual_revision}"
+        )
 
 
 def _assert_test_engine(test_engine: Engine) -> None:
@@ -43,14 +75,16 @@ def _assert_test_engine(test_engine: Engine) -> None:
 
 @pytest.fixture(scope="session", autouse=True)
 def test_database() -> Generator[None]:
-    """Create a disposable schema only after validating the database identity."""
+    """Create the test schema using Alembic migrations."""
     _assert_test_engine(engine)
-    Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
+
+    _drop_test_schema()
+    _apply_migrations()
+    _verify_migrations()
 
     yield
 
-    Base.metadata.drop_all(bind=engine)
+    _drop_test_schema()
     engine.dispose()
 
 
