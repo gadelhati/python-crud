@@ -1,5 +1,6 @@
 # app/services/auth.py - Authentication service
 import logging
+import secrets
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
@@ -13,7 +14,7 @@ from app.models.user import User
 from app.repositories.user import UserRepository
 from app.schemas.auth import TokenResponse
 from app.services.base import ServiceError
-from app.services.password import verify_password
+from app.services.password import hash_password, verify_password
 from app.services.token import (
     create_access_token,
     create_refresh_token,
@@ -21,6 +22,8 @@ from app.services.token import (
     decode_refresh_token_claims_with_version,
 )
 
+# Used to mitigate username enumeration through timing differences.
+_DUMMY_PASSWORD_HASH = hash_password(secrets.token_urlsafe(32))
 logger = logging.getLogger(__name__)
 
 
@@ -36,14 +39,35 @@ class ServiceAuth:
 
     def authenticate(self, username: str, password: str) -> User:
         """Validates credentials and manages lockout."""
-        invalid = ServiceError("Incorrect username or password", code="invalid_credentials")
+
+        invalid = ServiceError(
+            "Incorrect username or password",
+            code="invalid_credentials",
+        )
+
         user = self.users.find_by_username_or_email(username)
+
+        # Always perform password verification to reduce timing differences.
+        password_hash = (
+            user.password if user is not None and user.is_active else _DUMMY_PASSWORD_HASH
+        )
+
+        password_valid = verify_password(password, password_hash)
+        now = datetime.now(UTC)
 
         if user is None or not user.is_active:
             logger.warning("Failed login for %s", username)
             raise invalid
 
-        now = datetime.now(UTC)
+        if not password_valid:
+            user.failed_login_attempts += 1
+
+            if user.failed_login_attempts >= self.MAX_FAILED_ATTEMPTS:
+                user.locked_until = now + self.LOCKOUT_DURATION
+                logger.warning("Account locked for excessive attempts: %s", username)
+
+            self.db.commit()
+            raise invalid
 
         if user.locked_until is not None:
             locked_until = (
@@ -54,20 +78,10 @@ class ServiceAuth:
 
             if locked_until > now:
                 logger.warning("Login attempt on locked account: %s", username)
-                raise ServiceError("Account temporarily locked", code="account_locked")
+                raise invalid
 
             user.locked_until = None
             user.failed_login_attempts = 0
-
-        if not verify_password(password, user.password):
-            user.failed_login_attempts += 1
-
-            if user.failed_login_attempts >= self.MAX_FAILED_ATTEMPTS:
-                user.locked_until = now + self.LOCKOUT_DURATION
-                logger.warning("Account locked for excessive attempts: %s", username)
-
-            self.db.commit()
-            raise invalid
 
         user.failed_login_attempts = 0
         user.locked_until = None

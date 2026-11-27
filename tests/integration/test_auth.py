@@ -22,7 +22,7 @@ def test_login_lockout_unlock_and_refresh_rotation(client, auth_headers, user_fa
         "/login",
         json={"username": target.username, "password": "CorrectPassword123!"},
     )
-    assert locked.status_code == 423
+    assert locked.status_code == 401
 
     # Administrative unlock is covered through the public endpoint.
     security = client.get(f"/user/{target.id}/security", headers=auth_headers)
