@@ -83,15 +83,17 @@ AuthenticatedUser = Annotated[User, Depends(get_authenticated_user)]
 
 
 def _is_admin(user: User) -> bool:
-    return any(role.name == "admin" for role in user.roles)
+    return any(role.name == "admin" for role in user.roles if role.deleted_at is None)
 
 
 def _has_permission(user: User, required_action: EnumPermissionAction) -> bool:
     if _is_admin(user):
         return True
+
     return any(
         permission.action == required_action
         for role in user.roles
+        if role.deleted_at is None
         for permission in role.permissions
     )
 
