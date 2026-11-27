@@ -31,6 +31,12 @@ class ServiceUser(ServiceBase[User, UserPasswordRequest, UserRequest, UserRespon
         super().__init__(db, self.users, UserResponse)
 
     def _resolve_roles(self, role_ids: list[UUID]) -> list:
+        if len(role_ids) < UserValidation.MIN_ROLES_PER_USER:
+            raise ServiceError(
+                "At least one role must be assigned to the user",
+                code="validation_error",
+            )
+
         self._validate_ids(role_ids, UserValidation.MAX_ROLES_PER_USER, "roles")
         roles = self.roles.find_by_ids(role_ids)
         self._check_found(roles, role_ids, "roles")
@@ -85,17 +91,6 @@ class ServiceUser(ServiceBase[User, UserPasswordRequest, UserRequest, UserRespon
 
         for field, value in data.items():
             setattr(user, field, value)
-
-        if "role_ids" in dto.model_fields_set:
-            roles = self._resolve_roles(dto.role_ids) if dto.role_ids else []
-
-            PermissionPolicy.ensure_can_assign_roles(
-                self.db,
-                current_user_id,
-                roles,
-            )
-
-            user.roles = roles
 
         self._stamp(user, current_user_id)
         self.users.save(user)

@@ -18,6 +18,7 @@ from app.schemas.user import (
     UserRequest,
     UserResponse,
     UserResponseAudit,
+    UserRolesUpdateRequest,
 )
 from app.services.user import ServiceUser
 
@@ -117,3 +118,17 @@ def get_security_status(user_id: UUID, _: AdminUser, db: DbSession):
 @user.patch("/{user_id}/unlock", status_code=status.HTTP_204_NO_CONTENT)
 def unlock_account(user_id: UUID, current_user: AdminUser, db: DbSession):
     ServiceUser(db).unlock_account(user_id, current_user_id=current_user.id)
+
+
+@user.put("/{user_id}/roles", response_model=UserResponse)
+def update_roles(
+    user_id: UUID,
+    request: UserRolesUpdateRequest,
+    current_user: Annotated[User, Depends(require_permission(EnumPermissionAction.UPDATE_USER))],
+    db: DbSession,
+):
+    return ServiceUser(db).update_roles(
+        user_id,
+        request.role_ids,
+        current_user_id=current_user.id,
+    )

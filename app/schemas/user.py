@@ -88,6 +88,22 @@ class UserRoleRequest(SchemaBase):
         return v
 
 
+class UserRolesUpdateRequest(SchemaBase):
+    """Schema for replacing a user's roles."""
+
+    role_ids: list[UUID] = Field(
+        min_length=UserValidation.MIN_ROLES_PER_USER,
+        max_length=UserValidation.MAX_ROLES_PER_USER,
+    )
+
+    @field_validator("role_ids")
+    @classmethod
+    def validate_role_ids(cls, v: list[UUID]) -> list[UUID]:
+        if len(v) != len(set(v)):
+            raise ValueError("Duplicate roles not allowed")
+        return v
+
+
 class UserCreateRequest(UserRequest, UserPasswordRequest, UserRoleRequest):
     """Schema for user creation requests with all fields."""
 
