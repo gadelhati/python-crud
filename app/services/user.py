@@ -79,6 +79,10 @@ class ServiceUser(ServiceBase[User, UserPasswordRequest, UserRequest, UserRespon
         ):
             raise ServiceError("Email already registered", code="conflict")
 
+        # Invalidate existing tokens when account status changes.
+        if "is_active" in data and data["is_active"] != user.is_active:
+            user.auth_version += 1
+
         for field, value in data.items():
             setattr(user, field, value)
 
@@ -206,3 +210,30 @@ class ServiceUser(ServiceBase[User, UserPasswordRequest, UserRequest, UserRespon
             user,
             from_attributes=True,
         )
+
+    def soft_delete(self, id: UUID, current_user_id: UUID | None = None) -> bool:
+        user = self._get_or_404(id)
+        user.auth_version += 1
+        self._stamp(user, current_user_id)
+
+        if not self.users.soft_delete_by_id(id, current_user_id):
+            raise ServiceError(
+                f"{self._name()} with id {id} not found",
+                code="not_found",
+            )
+
+        return True
+
+    def restore(self, id: UUID, current_user_id: UUID | None = None) -> UserResponse:
+        user = self.users.restore_by_id(id, restored_by=current_user_id)
+
+        if user is None:
+            raise ServiceError(
+                f"{self._name()} with id {id} not found or not deleted",
+                code="invalid_operation",
+            )
+
+        user.auth_version += 1
+        self.users.save(user)
+
+        return self._to_dto(user)
