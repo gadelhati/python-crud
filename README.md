@@ -202,11 +202,14 @@ Configure the PostgreSQL credentials and application secrets in `.env.docker`.
 ### Development
 
 ```bash
-# Start database and API
-docker compose --env-file .env.docker -f compose.yaml -f compose.dev.yaml up -d --build
+# Start database
+docker compose --env-file .env.docker -f compose.yaml -f compose.dev.yaml up -d db
 
 # Apply database migrations
 docker compose --env-file .env.docker -f compose.yaml -f compose.dev.yaml --profile tools run --rm migrate
+
+# Start API
+docker compose --env-file .env.docker -f compose.yaml -f compose.dev.yaml up -d --build api
 
 # View logs
 docker compose --env-file .env.docker -f compose.yaml -f compose.dev.yaml logs -f api
