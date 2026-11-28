@@ -56,8 +56,10 @@ python-crud/
   - Access and refresh JWT tokens with `jti` tracking, database-backed token blacklisting, automatic token rotation on refresh, and immediate rejection of deactivated accounts.
   - Account lockout after consecutive failed login attempts (`423 Locked`), with administrative unlock support.
 - **Rate Limiting (`SlowAPI`):**
-  - Centralized limiter configuration in `app/rate_limit.py` supporting in-memory (`memory://`) or Redis (`redis://`) backends.
-  - Configurable rate limits on critical endpoints (`POST /login`, `POST /login/refresh`, and `POST /admin/init/create-first-user`) returning `429 Too Many Requests`.
+  - Configurable storage backend: in-memory (`memory://`) by default or Redis (`redis://...`).
+  - The in-memory backend is process-local and is not shared across multiple API instances.
+  - Configurable limits on login, token refresh, initial administrator creation, and password reset endpoints.
+  - Rate-limited requests return `429 Too Many Requests`.
 - **RBAC & Unified Audit Trails:**
   - Granular permission synchronization (`EnumPermissionAction`) across users, roles, and permissions.
   - Standardized audit endpoints (`GET /user/audit`, `GET /user/audit/{id}`, `GET /role/audit`, `GET /role/audit/{id}`, `GET /permission/audit`, `GET /permission/audit/{id}`) restricted to administrators (`AdminUser`), exposing `created_by`, `updated_by`, `deleted_by`, `deleted_at`, and `version_id` (including soft-deleted records).
@@ -70,23 +72,52 @@ python-crud/
 
 ### Public & Bootstrap
 - `GET /` — Root welcome response
-- `GET /health` — Lightweight liveness check
+- `GET /health` — Lightweight health check
 - `POST /admin/init/create-first-user` — Bootstrap initial administrator account (rate-limited)
 
 ### Authentication
-- `POST /login` — Authenticate and issue access + refresh tokens (rate-limited)
-- `POST /login/refresh` — Rotate refresh token and issue new token pair (rate-limited)
-- `POST /login/logout` — Revoke refresh token in blacklist
+- `POST /login` — Authenticate and issue access and refresh tokens (rate-limited)
+- `POST /login/refresh` — Rotate refresh token and issue a new token pair (rate-limited)
+- `POST /login/logout` — Revoke refresh token (requires access token)
+- `POST /login/password-reset/request` — Request a password reset link (rate-limited, returns a generic response)
+- `POST /login/password-reset/confirm` — Confirm password reset using the reset token (rate-limited)
 
-### Users, Roles & Permissions
-- `GET /user`, `POST /user`, `GET /user/{user_id}`, `PUT /user/{user_id}`, `DELETE /user/{user_id}`, `PATCH /user/{user_id}/restore`, `DELETE /user/{user_id}/hard`, `POST /user/{user_id}/unlock`
-- `GET /role`, `POST /role`, `GET /role/{role_id}`, `PUT /role/{role_id}`, `DELETE /role/{role_id}`, `PATCH /role/{role_id}/restore`, `DELETE /role/{role_id}/hard`
-- `GET /permission`, `POST /permission`, `GET /permission/{permission_id}`, `PUT /permission/{permission_id}`, `DELETE /permission/{permission_id}`, `PATCH /permission/{permission_id}/restore`, `DELETE /permission/{permission_id}/hard`
+### Users
+- `GET /user` — List users
+- `POST /user` — Create user
+- `GET /user/{user_id}` — Get user
+- `PUT /user/{user_id}` — Update user
+- `DELETE /user/{user_id}` — Soft delete user
+- `DELETE /user/{user_id}/hard` — Permanently delete user
+- `PATCH /user/{user_id}/restore` — Restore soft-deleted user
+- `GET /user/{user_id}/security` — Get account security status (administrators only)
+- `PATCH /user/{user_id}/unlock` — Unlock user account (administrators only)
+- `PUT /user/{user_id}/roles` — Update user roles
 
-### Audit Endpoints (`AdminUser` only)
+### Roles
+- `GET /role` — List roles
+- `POST /role` — Create role
+- `GET /role/defaults` — List default roles
+- `GET /role/{role_id}` — Get role
+- `PUT /role/{role_id}` — Update role
+- `PATCH /role/{role_id}/permissions` — Update role permissions
+- `DELETE /role/{role_id}` — Soft delete role
+- `DELETE /role/{role_id}/hard` — Permanently delete role
+- `PATCH /role/{role_id}/restore` — Restore soft-deleted role
+
+### Permissions
+Permissions are managed through the application's permission enum and synchronization mechanism. The API exposes read-only operations and synchronization; it does not provide general permission CRUD endpoints.
+
+- `GET /permission` — List permissions
+- `GET /permission/by-action/{action}` — Get permissions by action
+- `GET /permission/{permission_id}` — Get permission
+- `POST /permission/sync` — Synchronize permissions with `EnumPermissionAction` (administrators only)
+
+### Audit Endpoints (Administrators only)
 - `GET /user/audit` and `GET /user/audit/{user_id}`
 - `GET /role/audit` and `GET /role/audit/{role_id}`
 - `GET /permission/audit` and `GET /permission/audit/{permission_id}`
+Audit list endpoints support pagination through `page` and `limit` query parameters.
 
 ## Configuration
 
@@ -107,16 +138,34 @@ cp .env.example .env
 | `UVICORN_HOST` | `127.0.0.1` | Server bind host |
 | `UVICORN_PORT` | `9000` | Server bind port |
 | `UVICORN_ROOT_PATH` | `""` | ASGI root path |
-| `UVICORN_RELOAD` | `false` | Enable auto-reload in development |
-| `UVICORN_JWT_SECRET_KEY` | *(required)* | Secret key for signing access tokens (min 32 chars) |
+| `UVICORN_RELOAD` | `false` | Enable auto-reload |
+| `UVICORN_JWT_SECRET_KEY` | *(required)* | Secret key for signing access tokens (minimum 32 characters) |
 | `UVICORN_JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | `30` | Access token lifetime in minutes |
-| `UVICORN_JWT_REFRESH_SECRET_KEY` | *(required)* | Separate secret key for signing refresh tokens (min 32 chars; must differ from the access token secret) |
-| `UVICORN_JWT_REFRESH_TOKEN_EXPIRE_MINUTES` | `10080` | Refresh token lifetime in minutes (7 days) |
+| `UVICORN_JWT_REFRESH_SECRET_KEY` | *(required)* | Separate secret key for signing refresh tokens (minimum 32 characters; must differ from the access token secret) |
+| `UVICORN_JWT_REFRESH_TOKEN_EXPIRE_MINUTES` | `10080` | Refresh token lifetime in minutes |
 | `UVICORN_DATABASE_URL` | *(required)* | SQLAlchemy database connection URL |
 | `UVICORN_RATE_LIMIT_STORAGE_URI` | `memory://` | SlowAPI storage backend (`memory://` or `redis://...`) |
 | `UVICORN_RATE_LIMIT_LOGIN` | `10/minute` | Rate limit for `POST /login` |
 | `UVICORN_RATE_LIMIT_REFRESH` | `10/minute` | Rate limit for `POST /login/refresh` |
 | `UVICORN_RATE_LIMIT_BOOTSTRAP` | `3/minute` | Rate limit for `POST /admin/init/create-first-user` |
+| `UVICORN_RATE_LIMIT_PASSWORD_RESET` | `3/minute` | Rate limit for password reset request and confirmation |
+| `UVICORN_PASSWORD_RESET_TOKEN_EXPIRE_MINUTES` | `30` | Password reset token lifetime in minutes |
+| `UVICORN_PASSWORD_RESET_URL` | `null` | Frontend URL used to construct password reset links |
+| `UVICORN_SMTP_HOST` | `null` | SMTP server hostname |
+| `UVICORN_SMTP_PORT` | `587` | SMTP server port |
+| `UVICORN_SMTP_USERNAME` | `null` | SMTP authentication username |
+| `UVICORN_SMTP_PASSWORD` | `null` | SMTP authentication password |
+| `UVICORN_SMTP_FROM` | `null` | Sender email address |
+| `UVICORN_SMTP_USE_SSL` | `false` | Enable implicit SMTP SSL/TLS |
+| `UVICORN_SMTP_STARTTLS` | `true` | Enable SMTP STARTTLS |
+| `UVICORN_CORS_ALLOW_ORIGINS` | `[]` | Allowed CORS origins |
+| `UVICORN_CORS_ALLOW_METHODS` | `GET,POST,PUT,PATCH,DELETE,OPTIONS` | Allowed CORS methods |
+| `UVICORN_CORS_ALLOW_HEADERS` | `Authorization,Content-Type` | Allowed CORS headers |
+| `UVICORN_CORS_ALLOW_CREDENTIALS` | `false` | Allow credentials in CORS requests |
+
+**Password Reset:** Password recovery requires a configured SMTP host and sender address. SMTP authentication credentials, when configured, must use an encrypted transport (SSL/TLS or STARTTLS).
+
+**Rate Limiting:** The default in-memory backend is suitable for single-process deployments. Use Redis when rate-limit state must be shared across multiple API instances.
 
 ## Local Setup & Running
 
