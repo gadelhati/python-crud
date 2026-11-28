@@ -62,6 +62,14 @@ class Settings(BaseSettings):
     def validate_smtp_transport(self) -> "Settings":
         if self.smtp_use_ssl and self.smtp_starttls:
             raise ValueError("SMTP SSL and STARTTLS cannot be enabled simultaneously")
+
+        has_smtp_credentials = bool(self.smtp_username) or bool(
+            self.smtp_password and self.smtp_password.get_secret_value()
+        )
+
+        if has_smtp_credentials and not (self.smtp_use_ssl or self.smtp_starttls):
+            raise ValueError("SMTP authentication requires SSL or STARTTLS")
+
         return self
 
     model_config = SettingsConfigDict(

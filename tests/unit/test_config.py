@@ -54,3 +54,26 @@ def test_valid_smtp_transport_configurations(
 
     assert config.smtp_use_ssl is smtp_use_ssl
     assert config.smtp_starttls is smtp_starttls
+
+
+@pytest.mark.parametrize(
+    "credentials",
+    [
+        {"smtp_username": "smtp-user"},
+        {"smtp_password": "smtp-password"},
+        {
+            "smtp_username": "smtp-user",
+            "smtp_password": "smtp-password",
+        },
+    ],
+)
+def test_smtp_authentication_requires_encrypted_transport(credentials: dict) -> None:
+    with pytest.raises(
+        ValidationError,
+        match="SMTP authentication requires SSL or STARTTLS",
+    ):
+        build_settings(
+            smtp_use_ssl=False,
+            smtp_starttls=False,
+            **credentials,
+        )
