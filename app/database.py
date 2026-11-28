@@ -9,6 +9,12 @@ from app.config import settings
 
 connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
 
+if settings.database_url.startswith("sqlite"):
+    connect_args["check_same_thread"] = False
+
+elif settings.database_url.startswith("postgresql"):
+    connect_args["options"] = f"-csearch_path={settings.database_schema}"
+
 engine = create_engine(settings.database_url, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

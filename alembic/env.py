@@ -1,5 +1,7 @@
 from logging.config import fileConfig
 
+from sqlalchemy import text
+
 import app.models  # noqa: F401
 from alembic import context
 from app.config import settings
@@ -29,8 +31,14 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Executa migrações no modo 'online' usando o engine da aplicação."""
+    """Executa migrações no modo online usando o engine da aplicação."""
     with engine.connect() as connection:
+        if connection.dialect.name == "postgresql":
+            schema = settings.database_schema
+
+            connection.execute(text(f'CREATE SCHEMA IF NOT EXISTS "{schema}"'))
+            connection.execute(text(f'SET search_path TO "{schema}"'))
+
         context.configure(
             connection=connection,
             target_metadata=target_metadata,

@@ -36,6 +36,7 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = Field(min_length=1)
+    database_schema: str = Field(default="public", pattern=r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
     # Rate limiting
     rate_limit_storage_uri: str = "memory://"
